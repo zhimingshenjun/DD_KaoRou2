@@ -62,6 +62,6 @@ ctrl+y\n\n\
         github_url = QLabel()
         github_url.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
         github_url.setOpenExternalLinks(True)
-        github_url.setText(_translate("MainWindow", "<html><head/><body><p><a href=\"https://github.com/jiafangjun/DD_KaoRou\">\
-<span style=\" text-decoration: underline; color:#cccccc;\">https://github.com/jiafangjun/DD_KaoRou</span></a></p></body></html>", None))
+        github_url.setText(_translate("MainWindow", "<html><head/><body><p><a href=\"https://github.com/jiafangjun/DD_KaoRou2\">\
+<span style=\" text-decoration: underline; color:#cccccc;\">https://github.com/jiafangjun/DD_KaoRou2</span></a></p></body></html>", None))
         layout.addWidget(github_url, 4, 2, 1, 3)
