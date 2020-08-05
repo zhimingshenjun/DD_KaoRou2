@@ -1,0 +1,1 @@
+pyinstaller -i favicon.ico --additional-hooks-dir=hooks --clean .\main.py

@@ -1,0 +1,8 @@
+<!DOCTYPE RCC>
+<RCC version="1.0">
+<qresource>
+<file alias="weixin.jpg">weixin.jpg</file>
+<file alias="alipay.jpg">alipay.jpg</file>
+<file alias="qss/qss.qss">qss/qss.qss</file>
+</qresource>
+</RCC>
