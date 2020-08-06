@@ -20,7 +20,6 @@ class thankToBoss(QThread):
         super(thankToBoss, self).__init__(parent)
 
     def run(self):
-        print('start link')
         headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/49.0.2623.221 Safari/537.36 SE 2.X MetaSr 1.0'}
         response = requests.get(r'https://github.com/jiafangjun/DD_KaoRou2/blob/master/感谢石油王.csv', headers=headers)
         bossList = []
@@ -30,7 +29,10 @@ class thankToBoss(QThread):
                 boss = html[cnt - 1].split('>')[1].split('<')[0]
                 rmb = line.split('>')[1].split('<')[0]
                 bossList.append([boss, rmb])
-        self.bossList.emit(bossList)
+        if bossList:
+            self.bossList.emit(bossList)
+        else:
+            self.bossList.emit([['名单列表获取失败', '']])
 
 
 class pay(QDialog):
@@ -79,7 +81,8 @@ class pay(QDialog):
         self.bossTable.setRowCount(3)
         self.bossTable.setColumnCount(2)
         for i in range(2):
-            self.bossTable.setColumnWidth(i, 110)
+            self.bossTable.setColumnWidth(i, 105)
+        self.bossTable.setHorizontalHeaderLabels(['石油王', '打赏'])
         self.bossTable.setItem(0, 0, QTableWidgetItem('石油王鸣谢名单'))
         self.bossTable.setItem(0, 1, QTableWidgetItem('正在获取...'))
         layout.addWidget(self.bossTable, 0, 1, 3, 1)
@@ -95,4 +98,6 @@ class pay(QDialog):
         for y, i in enumerate(bossList):
             self.bossTable.setItem(y, 0, QTableWidgetItem(i[0]))
             self.bossTable.setItem(y, 1, QTableWidgetItem(i[1]))
+            self.bossTable.item(y, 0).setTextAlignment(Qt.AlignCenter)
+            self.bossTable.item(y, 1).setTextAlignment(Qt.AlignCenter)
         self.bossTable.setHorizontalHeaderLabels(['石油王', '打赏'])

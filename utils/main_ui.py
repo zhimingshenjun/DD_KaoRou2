@@ -7,7 +7,8 @@ from PySide2.QtWidgets import QWidget, QMainWindow, QGridLayout, QFileDialog, QT
         QGraphicsScene, QGraphicsView, QGraphicsDropShadowEffect, QComboBox, QMessageBox, QColorDialog
 from PySide2.QtMultimedia import QMediaPlayer
 from PySide2.QtMultimediaWidgets import QGraphicsVideoItem
-from PySide2.QtGui import QIcon, QKeySequence, QFont, QColor, QPixmap, QHoverEvent, QCloseEvent
+from PySide2.QtGui import QIcon, QKeySequence, QFont, QColor, QPixmap, QHoverEvent, QCloseEvent,\
+    QDragEnterEvent
 from PySide2.QtCore import Qt, QTimer, QEvent, QPoint, Signal, QSizeF, QUrl, QItemSelectionModel
 from utils.youtube_downloader import YoutubeDnld
 from utils.subtitle import exportSubtitle
@@ -124,10 +125,18 @@ class Label(QLabel):
 
 class GraphicsVideoItem(QGraphicsVideoItem):
     wheel = Signal(int)
+    dropFile = Signal(str)
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setAcceptDrops(True)
 
     def wheelEvent(self, QEvent):
         self.wheel.emit(QEvent.delta())
 
+    def dropEvent(self, QEvent):
+        if QEvent.mimeData().hasUrls:
+            self.dropFile.emit(QEvent.mimeData().urls()[0].toLocalFile())
 
 class editStyleNameDialog(QDialog):
     styleName = Signal(str)
@@ -233,6 +242,7 @@ class PreviewSubtitle(QDialog):  # 设置字幕预览效果的窗口
 class MainWindow(QMainWindow):  # Main window
     def __init__(self):
         super().__init__()
+        self.setAcceptDrops(True)
         self.installEventFilter(self)
         self.subtitle = QTableWidget()  # 重载表格滚轮事件 需提前到渲染UI界面之前才不会报错
         # self.subtitle.setMouseTracking(True)
@@ -298,7 +308,6 @@ class MainWindow(QMainWindow):  # Main window
         self.stack.addWidget(buttonWidget)
         self.pay = pay()
         self.hotKeyInfo = hotKey_Info()
-
         self.videoPath = ''
         self.videoWidth = 1920
         self.videoHeight = 1080
@@ -331,6 +340,7 @@ class MainWindow(QMainWindow):  # Main window
     def setPlayer(self):
         self.playerWidget = GraphicsVideoItem()
         self.playerWidget.wheel.connect(self.changeVideoWindowSize)
+        self.playerWidget.dropFile.connect(self.openVideo)
         w, h = self.videoWindowSizePreset[self.videoWindowSizeIndex]
         self.playerWidget.setSize(QSizeF(w, h))
         self.scene = QGraphicsScene()
@@ -484,9 +494,10 @@ class MainWindow(QMainWindow):  # Main window
         self.styleNameList[self.editIndex] = styleName
         self.subtitle.setHorizontalHeaderLabels(self.styleNameList)
 
-    def addSubtitle(self, index):
+    def addSubtitle(self, index, subtitlePath=''):
         self.editIndex = index
-        subtitlePath = QFileDialog.getOpenFileName(self, "请选择字幕", None, "字幕文件 (*.srt *.vtt *.ass)")[0]
+        if not subtitlePath:
+            subtitlePath = QFileDialog.getOpenFileName(self, "请选择字幕", None, "字幕文件 (*.srt *.vtt *.ass)")[0]
         if subtitlePath:
             subData = {}
             if subtitlePath.endswith('.ass'):
@@ -1036,9 +1047,27 @@ class MainWindow(QMainWindow):  # Main window
     def open(self):
         self.videoPath = QFileDialog.getOpenFileName(self, "请选择视频文件", None, "视频文件 (*.mp4 *.avi *.flv);;音频文件(*.mp3 *.wav *.aac);;所有文件(*.*)")[0]
         if self.videoPath:
+            self.openVideo(self.videoPath)
+
+    def openVideo(self, videoPath):
+        if not self.saveToken:
+            reply = QMessageBox.information(self, '字幕文件未保存', '是否保存字幕？', QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel)
+            if reply == QMessageBox.Yes:
+                self.videoDecoder.hide()
+                self.videoDecoder.show()  # 弹出输出保存界面
+            elif reply == QMessageBox.No:
+                if self.subPreview:
+                    os.remove(self.subPreview)  # 删除预览字幕文件
+                    if self.backupASS:
+                        originalASS = os.path.splitext(self.videoPath)[0] + '.ass'
+                        os.rename(self.backupASS, originalASS)  # 将备份ass文件改回去
+                self.saveToken = True
+            elif reply == QMessageBox.Cancel:
+                self.saveToken = False
+        if self.saveToken:
             for f in os.listdir('temp_audio'):
                 os.remove('temp_audio\%s' % f)
-            cmd = ['ffmpeg.exe', '-i', self.videoPath]
+            cmd = ['ffmpeg.exe', '-i', videoPath]
             p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
             p.wait()
             try:
@@ -1062,9 +1091,9 @@ class MainWindow(QMainWindow):  # Main window
             except:
                 self.duration = 114514  # 万一读取不上来视频长度就先随便分配个 之后在timeout修正
             # 向输出页面发送视频信息
-            self.videoDecoder.setDefault(self.videoPath, self.videoWidth, self.videoHeight, self.duration,
+            self.videoDecoder.setDefault(videoPath, self.videoWidth, self.videoHeight, self.duration,
                                          self.bitrate, self.fps, self.subtitleDict, self.styleNameList)
-            self.subPreview = os.path.splitext(self.videoPath)[0]  # 设置主界面实时预览字幕路径 采用k-lite解码器读取视频目录下同名的ass文件来加载
+            self.subPreview = os.path.splitext(videoPath)[0]  # 设置主界面实时预览字幕路径 采用k-lite解码器读取视频目录下同名的ass文件来加载
             if os.path.exists(self.subPreview + '.ass'):  # 防止覆盖已存在的ass文件 若有 复制一个备份
                 with codecs.open(self.subPreview + '.ass', 'r', 'utf_8_sig') as sub:
                     sub = sub.readlines()
@@ -1077,7 +1106,7 @@ class MainWindow(QMainWindow):  # Main window
             self.videoDecoder.writeAss(self.subPreview, False, True)  # 创建空白文件
             self.position = 0
             self.oldPosition = 0
-            url = QUrl.fromLocalFile(self.videoPath)
+            url = QUrl.fromLocalFile(videoPath)
             self.stack.setCurrentIndex(1)
             self.player.setMedia(url)
             self.player.setPlaybackRate(1)
@@ -1089,7 +1118,7 @@ class MainWindow(QMainWindow):  # Main window
                 self.sepMain.terminate()
                 self.sepMain.quit()
                 self.sepMain.wait()
-            self.sepMain = sepMainAudio(self.videoPath, self.duration)  # 开始切片主音频
+            self.sepMain = sepMainAudio(videoPath, self.duration)  # 开始切片主音频
             self.sepMain.mainAudioWave.connect(self.addMainAudioWave)
             self.sepMain.start()
             self.refreshMainAudioToken = False  # 刷新主音频
@@ -1104,6 +1133,9 @@ class MainWindow(QMainWindow):  # Main window
             self.mainAudio.plot([0], [0], 0, 1)
             self.voiceAudio.plot([0], [0], True, 0, 1)
             self.mediaPlay()
+            self.timer.stop()
+            self.subTimer.stop()
+            self.graphTimer.stop()
             try:  # 尝试断开三个timer
                 self.timer.disconnect(self.timeOut)
             except:
@@ -1467,6 +1499,18 @@ class MainWindow(QMainWindow):  # Main window
             for wind in [self.dnldWindow, self.exportWindow, self.videoDecoder, self.separate, self.editStyleNameDialog]:
                     if not wind.isHidden():
                         wind.hide()
+
+    def dragEnterEvent(self, QDragEnterEvent):  # 启用拖入文件功能
+        QDragEnterEvent.accept()
+
+    def dropEvent(self, QEvent):  # 检测拖入的文件
+        if QEvent.mimeData().hasUrls:
+            dropFile = QEvent.mimeData().urls()[0].toLocalFile()
+            _, format = os.path.splitext(dropFile)
+            if format in ['.ass', '.srt', '.vtt']:
+                self.addSubtitle(self.subEditComBox.currentIndex(), dropFile)
+            else:
+                self.openVideo(dropFile)
 
     def keyPressEvent(self, QKeyEvent):
         key = QKeyEvent.key()
