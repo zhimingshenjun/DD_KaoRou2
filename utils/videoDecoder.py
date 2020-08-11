@@ -274,85 +274,82 @@ class fontWidget(QWidget):
         self.secondColorLabel.hide()
         self.optionLayout.addWidget(self.secondColorLabel, 1, 4, 1, 1)
 
-#         self.outlineSizeBox = QComboBox()
-#         self.outlineSizeBox.addItems(['0', '1', '2', '3', '4'])
-#         self.outlineSizeBox.setCurrentIndex(1)
-#         self.outlineSizeBox.setFixedWidth(100)
+        validator = QIntValidator()
+        self.horizontalMoveEdit = QLineEdit('100')
+        self.horizontalMoveEdit.setValidator(validator)
+        self.horizontalMoveEdit.setFixedWidth(100)
+        self.horizontalMoveEdit.hide()
+        self.optionLayout.addWidget(self.horizontalMoveEdit, 2, 0, 1, 1)
+        self.horizontalMoveLabel = QLabel('水平移动')
+        self.horizontalMoveLabel.hide()
+        self.optionLayout.addWidget(self.horizontalMoveLabel, 2, 1, 1, 1)
+
+        self.verticalMoveEdit = QLineEdit('0')
+        self.verticalMoveEdit.setValidator(validator)
+        self.verticalMoveEdit.setFixedWidth(100)
+        self.verticalMoveEdit.hide()
+        self.optionLayout.addWidget(self.verticalMoveEdit, 2, 3, 1, 1)
+        self.verticalMoveLabel = QLabel('竖直移动')
+        self.verticalMoveLabel.hide()
+        self.optionLayout.addWidget(self.verticalMoveLabel, 2, 4, 1, 1)
+
         validator = QDoubleValidator()
-#         validator.setRange(0.0, 40.0)
         self.outlineSizeEdit = QLineEdit('2')
         self.outlineSizeEdit.setValidator(validator)
         self.outlineSizeEdit.setFixedWidth(100)
-        self.optionLayout.addWidget(self.outlineSizeEdit, 2, 0, 1, 1)
+        self.optionLayout.addWidget(self.outlineSizeEdit, 3, 0, 1, 1)
         self.outlineSizeLabel = QLabel('描边大小')
-        self.optionLayout.addWidget(self.outlineSizeLabel, 2, 1, 1, 1)
+        self.optionLayout.addWidget(self.outlineSizeLabel, 3, 1, 1, 1)
         self.outlineColorSelect = label()
         self.outlineColorSelect.setAlignment(Qt.AlignCenter)
         self.outlineColorSelect.setText(self.outlineColor)
         self.outlineColorSelect.setStyleSheet('background-color:%s;color:%s' % (self.outlineColor, self.colorReverse(self.outlineColor)))
         self.outlineColorSelect.clicked.connect(self.getOutlineColor)
-        self.optionLayout.addWidget(self.outlineColorSelect, 2, 3, 1, 1)
+        self.optionLayout.addWidget(self.outlineColorSelect, 3, 3, 1, 1)
         self.outlineColorLabel = QLabel('描边颜色')
-        self.optionLayout.addWidget(self.outlineColorLabel, 2, 4, 1, 1)
-#         self.shadowSizeBox = QComboBox()
-#         self.shadowSizeBox.addItems(['0', '1', '2', '3', '4'])
-#         self.shadowSizeBox.setCurrentIndex(1)
-#         self.shadowSizeBox.setFixedWidth(100)
+        self.optionLayout.addWidget(self.outlineColorLabel, 3, 4, 1, 1)
         self.shadowSizeEdit = QLineEdit('2')
         self.shadowSizeEdit.setValidator(validator)
         self.shadowSizeEdit.setFixedWidth(100)
-        self.optionLayout.addWidget(self.shadowSizeEdit, 3, 0, 1, 1)
+        self.optionLayout.addWidget(self.shadowSizeEdit, 4, 0, 1, 1)
         self.shadowSizeLabel = QLabel('阴影大小')
-        self.optionLayout.addWidget(self.shadowSizeLabel, 3, 1, 1, 1)
+        self.optionLayout.addWidget(self.shadowSizeLabel, 4, 1, 1, 1)
         self.shadowColorSelect = label()
         self.shadowColorSelect.setAlignment(Qt.AlignCenter)
         self.shadowColorSelect.setText(self.shadowColor)
         self.shadowColorSelect.setStyleSheet('background-color:%s;color:%s' % (self.shadowColor, self.colorReverse(self.shadowColor)))
         self.shadowColorSelect.clicked.connect(self.getShadowColor)
-        self.optionLayout.addWidget(self.shadowColorSelect, 3, 3, 1, 1)
+        self.optionLayout.addWidget(self.shadowColorSelect, 4, 3, 1, 1)
         self.shadowColorLabel = QLabel('阴影颜色')
-        self.optionLayout.addWidget(self.shadowColorLabel, 3, 4, 1, 1)
+        self.optionLayout.addWidget(self.shadowColorLabel, 4, 4, 1, 1)
         self.align = QComboBox()
         self.align.addItems(['1: 左下', '2: 中下', '3: 右下', '4: 中左', '5: 中间', '6: 中右', '7: 左上', '8: 中上', '9: 右上'])
         self.align.setCurrentIndex(1)
         self.align.setFixedWidth(100)
-        self.optionLayout.addWidget(self.align, 4, 0, 1, 1)
+        self.optionLayout.addWidget(self.align, 5, 0, 1, 1)
         self.alignLabel = QLabel('对齐方式')
-        self.optionLayout.addWidget(self.alignLabel, 4, 1, 1, 1)
+        self.optionLayout.addWidget(self.alignLabel, 5, 1, 1, 1)
+
         validator = QIntValidator()
         self.VAlignSlider = QLineEdit('100')
         self.VAlignSlider.setValidator(validator)
         self.VAlignSlider.setFixedWidth(100)
-#         self.VAlignSlider.setFixedWidth(100)
-#         self.VAlignSlider.setTickPosition(QSlider.TicksAbove)
-#         self.VAlignSlider.setSingleStep(10)
-#         self.VAlignSlider.setTickInterval(20)
-#         self.VAlignSlider.setValue(10)
-        self.optionLayout.addWidget(self.VAlignSlider, 4, 3, 1, 1)
-#         self.VAlignSlider.setOrientation(Qt.Horizontal)
+        self.optionLayout.addWidget(self.VAlignSlider, 5, 3, 1, 1)
         self.VAlignLabel = QLabel('垂直边距')
-        self.optionLayout.addWidget(self.VAlignLabel, 4, 4, 1, 1)
+        self.optionLayout.addWidget(self.VAlignLabel, 5, 4, 1, 1)
 
         self.LAlignSlider = QLineEdit('0')
         self.LAlignSlider.setValidator(validator)
         self.LAlignSlider.setFixedWidth(100)
-#         self.LAlignSlider.setTickPosition(QSlider.TicksAbove)
-#         self.LAlignSlider.setSingleStep(10)
-#         self.LAlignSlider.setTickInterval(20)
-        self.optionLayout.addWidget(self.LAlignSlider, 5, 0, 1, 1)
-#         self.LAlignSlider.setOrientation(Qt.Horizontal)
+        self.optionLayout.addWidget(self.LAlignSlider, 6, 0, 1, 1)
         self.LAlignLabel = QLabel('左边距')
-        self.optionLayout.addWidget(self.LAlignLabel, 5, 1, 1, 1)
+        self.optionLayout.addWidget(self.LAlignLabel, 6, 1, 1, 1)
         self.RAlignSlider = QLineEdit('0')
         self.RAlignSlider.setValidator(validator)
         self.RAlignSlider.setFixedWidth(100)
-#         self.RAlignSlider.setTickPosition(QSlider.TicksAbove)
-#         self.RAlignSlider.setSingleStep(10)
-#         self.RAlignSlider.setTickInterval(20)
-        self.optionLayout.addWidget(self.RAlignSlider, 5, 3, 1, 1)
-#         self.RAlignSlider.setOrientation(Qt.Horizontal)
+        self.optionLayout.addWidget(self.RAlignSlider, 6, 3, 1, 1)
         self.RAlignLabel = QLabel('右边距')
-        self.optionLayout.addWidget(self.RAlignLabel, 5, 4, 1, 1)
+        self.optionLayout.addWidget(self.RAlignLabel, 6, 4, 1, 1)
 
     def getFont(self):
         status, font = QFontDialog.getFont()
@@ -375,10 +372,18 @@ class fontWidget(QWidget):
         if self.karaokeStatus:
             self.secondColorSelect.show()
             self.secondColorLabel.show()
+            self.horizontalMoveEdit.show()
+            self.horizontalMoveLabel.show()
+            self.verticalMoveEdit.show()
+            self.verticalMoveLabel.show()
             self.karaoke.setStyleSheet('background-color:#3daee9')
         else:
             self.secondColorSelect.hide()
             self.secondColorLabel.hide()
+            self.horizontalMoveEdit.hide()
+            self.horizontalMoveLabel.hide()
+            self.verticalMoveEdit.hide()
+            self.verticalMoveLabel.hide()
             self.karaoke.setStyleSheet('background-color:#31363b')
 
     def getFontColor(self):
@@ -658,7 +663,13 @@ class VideoDecoder(QDialog):
         self.karaokDict = {}
         for subNumber, font in selectedSubDict.items():
             if font.karaokeStatus:
-                self.karaokDict[subNumber] = [True, self.ffmpegColor(font.secondColor), int(font.LAlignSlider.text()), int(font.VAlignSlider.text())]
+                try:
+                    self.karaokDict[subNumber] = [True, self.ffmpegColor(font.secondColor), int(font.LAlignSlider.text()),
+                                                  int(font.VAlignSlider.text()), int(font.horizontalMoveEdit.text()),
+                                                  int(font.verticalMoveEdit.text())]
+                except:
+                    self.karaokDict[subNumber] = [True, self.ffmpegColor(font.secondColor), int(font.LAlignSlider.text()),
+                                                  int(font.VAlignSlider.text()), 0, 0]
             else:
                 self.karaokDict[subNumber] = [False, '&H00000000']
             fontBold = -1 if font.fontBold else 0
@@ -728,7 +739,13 @@ class VideoDecoder(QDialog):
             if not font.VAlignSlider.text():
                 font.VAlignSlider.setText('0')
             if font.karaokeStatus:
-                self.karaokDict[subNumber] = [True, self.ffmpegColor(font.secondColor), int(font.LAlignSlider.text()), int(font.VAlignSlider.text())]
+                try:
+                    self.karaokDict[subNumber] = [True, self.ffmpegColor(font.secondColor), int(font.LAlignSlider.text()),
+                                                  int(font.VAlignSlider.text()), int(font.horizontalMoveEdit.text()),
+                                                  int(font.verticalMoveEdit.text())]
+                except:
+                    self.karaokDict[subNumber] = [True, self.ffmpegColor(font.secondColor), int(font.LAlignSlider.text()),
+                                                  int(font.VAlignSlider.text()), 0, 0]
             else:
                 self.karaokDict[subNumber] = [False, '&H00000000']
             fontBold = -1 if font.fontBold else 0
@@ -761,7 +778,7 @@ class VideoDecoder(QDialog):
             ass = codecs.open(outputPath, 'w', 'utf_8_sig')
             ass.write('[Script Info]\n')
             ass.write('; Script generated by DD烤肉机2.0; Powered by 执鸣神君\n')
-            ass.write('; B站个人空间：https://space.bilibili.com/637783；Github项目地址：https://github.com/jiafangjun/DD_KaoRou\n')
+            ass.write('; B站个人空间：https://space.bilibili.com/637783；Github项目地址：https://github.com/jiafangjun/DD_KaoRou2\n')
             ass.write('Title: %s\n' % self.advanced.title.text())
             ass.write('OriginalScript: %s\n' % self.advanced.originalScript.text())
             ass.write('OriginalTranslation: %s\n' % self.advanced.translation.text())
@@ -792,12 +809,14 @@ class VideoDecoder(QDialog):
                     if self.karaokDict[subNumber][0]:
                         karaX = self.karaokDict[subNumber][2]
                         karaY = self.karaokDict[subNumber][3]
+                        moveX = self.karaokDict[subNumber][4]
+                        moveY = self.karaokDict[subNumber][5]
                         if self.layerCheckStatus:
                             line = 'Dialogue: 0,0:00:00.00,0:00:10.00,%s,#%s,0,0,0,,{\\K10\\move(%s,%s,%s,%s)}%s\n' % \
-                            (self.styleNameList[num - 1], num, karaX, karaY, karaX + 100, karaY, r'Hi! 我是第%s列歌词。' % num)
+                            (self.styleNameList[num - 1], num, karaX, karaY, karaX + moveX, karaY + moveY, r'Hi! 我是第%s列歌词。' % num)
                         else:
                             line = 'Dialogue: %s,0:00:00.00,0:00:10.00,%s,#%s,0,0,0,,{\\K10\\move(%s,%s,%s,%s)}%s\n' % \
-                            (subNumber, self.styleNameList[num - 1], num, karaX, karaY, karaX + 100, karaY, 'Hi! 我是第%s列歌词。' % num)
+                            (subNumber, self.styleNameList[num - 1], num, karaX, karaY, karaX + moveX, karaY + moveY, 'Hi! 我是第%s列歌词。' % num)
                         ass.write(line)
                     else:
                         if self.layerCheckStatus:
@@ -819,12 +838,14 @@ class VideoDecoder(QDialog):
                                 if self.karaokDict[subNumber][0]:
                                     karaX = self.karaokDict[subNumber][2]
                                     karaY = self.karaokDict[subNumber][3]
+                                    moveX = self.karaokDict[subNumber][4]
+                                    moveY = self.karaokDict[subNumber][5]
                                     if self.layerCheckStatus:
                                         line = 'Dialogue: 0,%s,%s,%s,#%s,0,0,0,,{\\K%s\\move(%s,%s,%s,%s)\\fad(500,500)}%s\n' % \
-                                        (ms2ASSTime(start), ms2ASSTime(start + subData[0]), self.styleNameList[num - 1], num, subData[0] // 10 - 100, karaX, karaY, karaX + 100, karaY, subData[1])
+                                        (ms2ASSTime(start), ms2ASSTime(start + subData[0]), self.styleNameList[num - 1], num, subData[0] // 10 - 100, karaX, karaY, karaX + moveX, karaY + moveY, subData[1])
                                     else:
                                         line = 'Dialogue: %s,%s,%s,%s,#%s,0,0,0,,{\\K%s\\move(%s,%s,%s,%s)\\fad(500,500)}%s\n' % \
-                                        (subNumber, ms2ASSTime(start), ms2ASSTime(start + subData[0]), self.styleNameList[num - 1], num, subData[0] // 10 - 100, karaX, karaY, karaX + 100, karaY, subData[1])
+                                        (subNumber, ms2ASSTime(start), ms2ASSTime(start + subData[0]), self.styleNameList[num - 1], num, subData[0] // 10 - 100, karaX, karaY, karaX + moveX, karaY + moveY, subData[1])
                                     ass.write(line)
                                 else:
                                     if self.layerCheckStatus:
@@ -843,12 +864,14 @@ class VideoDecoder(QDialog):
                                 if self.karaokDict[subNumber][0]:
                                     karaX = self.karaokDict[subNumber][2]
                                     karaY = self.karaokDict[subNumber][3]
+                                    moveX = self.karaokDict[subNumber][4]
+                                    moveY = self.karaokDict[subNumber][5]
                                     if self.layerCheckStatus:
                                         line = 'Dialogue: 0,0:00:00.00,0:00:10.00,%s,#%s,0,0,0,,{\\K1000\\move(%s,%s,%s,%s)}%s\n' % \
-                                        (self.styleNameList[num - 1], num, karaX, karaY, karaX + 100, karaY, subData[1])
+                                        (self.styleNameList[num - 1], num, karaX, karaY, karaX + moveX, karaY + moveY, subData[1])
                                     else:
                                         line = 'Dialogue: %s,0:00:00.00,0:00:10.00,%s,#%s,0,0,0,,{\\K1000\\move(%s,%s,%s,%s)}%s\n' % \
-                                        (subNumber, self.styleNameList[num - 1], num, karaX, karaY, karaX + 100, karaY, subData[1])
+                                        (subNumber, self.styleNameList[num - 1], num, karaX, karaY, karaX + moveX, karaY + moveY, subData[1])
                                     ass.write(line)
                                     break
                                 else:

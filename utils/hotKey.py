@@ -21,7 +21,7 @@ class hotKey_Info(QDialog):
         key_txt = u'\
 q或1 \ w或2\n\n\
 e或3 \ r或4\n\n\
-c\n\n\
+c或5\n\n\
 delete\n\n\
 space\n\n\
 ctrl+s\n\n\

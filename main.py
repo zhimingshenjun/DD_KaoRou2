@@ -21,11 +21,11 @@ if __name__ == '__main__':
     splash = QSplashScreen(QPixmap(r'utils\splash.jpg'))
     splash.show()
     mainWindow = MainWindow()
-    screenRect = desktop.screenGeometry()
-    mainWindow.resize(screenRect.width() * 0.75, screenRect.height() * 0.75)
+    screen = app.primaryScreen().geometry()
+    mainWindow.resize(screen.width() * 0.75, screen.height() * 0.75)
     size = mainWindow.geometry()
-    mainWindow.move((screenRect.width() - size.width()) / 2,
-                    (screenRect.height() - size.height()) / 2)
+    mainWindow.move((screen.width() - size.width()) / 2,
+                    (screen.height() - size.height()) / 2)
     mainWindow.show()
     splash.finish(mainWindow)
     sys.exit(app.exec_())
