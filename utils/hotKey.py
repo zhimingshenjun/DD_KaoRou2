@@ -14,7 +14,7 @@ class hotKey_Info(QDialog):
     def __init__(self):
         super().__init__()
         self.setWindowTitle('快捷键说明')
-        self.resize(520, 400)
+        self.resize(520, 450)
         layout = QGridLayout()
         self.setLayout(layout)
 
@@ -27,22 +27,26 @@ space\n\n\
 ctrl+s\n\n\
 ctrl+z\n\n\
 ctrl+y\n\n\
+ctrl+c\n\n\
+ctrl+v\n\n\
 ↑ \ ↓\n\n\
-← \ →'
+← \ →\n\n'
         key_label = QLabel(key_txt)
         layout.addWidget(key_label, 0, 0, 3, 1)
 
         info_txt = u'\
-在表格里选中字幕后 ，上沿快速加\减一行，即快速修改字幕开始时间\n\n\
-在表格里选中字幕后 ，下沿快速加\减一行，即快速修改字幕结束时间\n\n\
+在表格里选中字幕后 ，上沿快速加 \ 减一行，即快速修改字幕开始时间\n\n\
+在表格里选中字幕后 ，下沿快速加 \ 减一行，即快速修改字幕结束时间\n\n\
 按当前选择位置分割字幕\n\n\
 删除表格里选中的字幕\n\n\
 播放\暂停视频\n\n\
 弹出保存字幕和输出视频页面\n\n\
 后退一步\n\n\
 前进一步\n\n\
-视频音量+ \ -\n\n\
-视频进度倒退 \ 前进一行'
+复制\n\n\
+粘贴\n\n\
+跳转至上 \ 下一条字幕\n\n\
+视频进度倒退 \ 前进一行\n\n'
         info_label = QLabel(info_txt)
         layout.addWidget(info_label, 0, 1, 3, 4)
 

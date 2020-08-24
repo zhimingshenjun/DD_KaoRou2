@@ -1,9 +1,21 @@
 import os, time, copy, codecs, subprocess, psutil
-from PySide2.QtWidgets import QGridLayout, QFileDialog, QDialog, QPushButton,\
+from PySide2.QtWidgets import QGridLayout, QFileDialog, QDialog, QPushButton, QApplication,\
         QLineEdit, QTableWidget, QTableWidgetItem, QCheckBox, QProgressBar, QLabel,\
         QComboBox, QCheckBox, QWidget, QSlider, QFontDialog, QColorDialog, QTabWidget, QMessageBox
 from PySide2.QtCore import Qt, QTimer, Signal, QThread, QPoint
 from PySide2.QtGui import QFontInfo, QPixmap, QIntValidator, QDoubleValidator
+
+
+def ms2SRTTime(ms):
+    '''
+    receive int
+    return str
+    ms -> h:m:s,ms
+    '''
+    h, m = divmod(ms, 3600000)
+    m, s = divmod(m, 60000)
+    s, ms = divmod(s, 1000)
+    return '%s:%02d:%02d,%03d' % (h, m, s, ms)
 
 
 def ms2ASSTime(ms):
@@ -17,6 +29,18 @@ def ms2ASSTime(ms):
     s, ms = divmod(s, 1000)
     ms = ('%03d' % ms)[:2]
     return '%s:%02d:%02d.%s' % (h, m, s, ms)
+
+
+def ms2LRCTime(ms):
+    '''
+    receive int
+    return str
+    ms -> m:s.ms
+    '''
+    m, s = divmod(ms, 60000)
+    s, ms = divmod(s, 1000)
+    ms = ('%03d' % ms)[:2]
+    return '%02d:%02d.%s' % (m, s, ms)
 
 
 def calSubTime(t):
@@ -97,7 +121,7 @@ class encodeOption(QWidget):
     def __init__(self):
         super().__init__()
         self.resize(600, 300)
-        self.setWindowTitle('编码设置')
+        self.setWindowTitle('编码设置 (输出格式为mp4时生效 mkv默认无损合流)')
         layout = QGridLayout()
         self.setLayout(layout)
         resolution = QWidget()
@@ -258,7 +282,7 @@ class fontWidget(QWidget):
         self.optionLayout.addWidget(self.fontColorSelect, 0, 3, 1, 1)
         self.fontColorLabel = QLabel('字体颜色')
         self.optionLayout.addWidget(self.fontColorLabel, 0, 4, 1, 1)
-        self.karaoke = QPushButton('卡拉OK模式')
+        self.karaoke = QPushButton('卡拉OK平移模式')
         self.karaoke.setFixedWidth(150)
         self.karaokeStatus = False
         self.karaoke.clicked.connect(self.setKaraoke)
@@ -421,7 +445,7 @@ class fontWidget(QWidget):
         return '#%s%s%s' % (hex(r)[2:], hex(g)[2:], hex(b)[2:])
 
 
-class VideoDecoder(QDialog):
+class VideoDecoder(QWidget):
     saveToken = Signal(bool)
     popAnime4K = Signal()
 
@@ -437,14 +461,23 @@ class VideoDecoder(QDialog):
 
         super().__init__()
         self.setWindowTitle('字幕输出及合成')
-        self.resize(1700, 770)
+        screenRect = QApplication.primaryScreen().geometry()
+        screenHeight = screenRect.height() * 2 / 3
+        screenWidth = screenRect.width() * 3 / 4
+        self.resize(screenWidth, screenHeight)
         self.layout = QGridLayout()
         self.setLayout(self.layout)
 
         self.preview = QLabel('效果预览')
-        self.preview.setMaximumHeight(720)
-        self.preview.setMaximumWidth(1280)
-        self.layout.addWidget(self.preview, 0, 0, 6, 10)
+        self.preview.setFixedSize(screenWidth * 4 / 5, screenWidth * 9 / 20)
+        self.showMaximized()
+        # self.preview.setMaximumHeight(720)
+        # self.preview.setMaximumWidth(1280)
+        frame = QWidget()
+        frameLayout = QGridLayout()
+        frame.setLayout(frameLayout)
+        frameLayout.addWidget(self.preview)
+        self.layout.addWidget(frame, 0, 0, 6, 10)
         self.preview.setScaledContents(True)
         self.preview.setAlignment(Qt.AlignCenter)
         self.preview.setStyleSheet("QLabel{background:white;}")
@@ -458,7 +491,7 @@ class VideoDecoder(QDialog):
 
         self.option = QTabWidget()
         self.option.setMaximumWidth(450)
-        self.layout.addWidget(self.option, 0, 10, 3, 1)
+        self.layout.addWidget(self.option, 0, 10, 3, 2)
         self.subDict = {x: fontWidget() for x in range(5)}
         for subNumber, tabPage in self.subDict.items():
             self.option.addTab(tabPage, '字幕 %s' % (subNumber + 1))
@@ -466,7 +499,7 @@ class VideoDecoder(QDialog):
         self.option.addTab(self.advanced, 'ASS字幕信息')
 
         self.startGrid = QWidget()
-        self.layout.addWidget(self.startGrid, 3, 10, 3, 1)
+        self.layout.addWidget(self.startGrid, 3, 10, 3, 2)
         self.startLayout = QGridLayout()
         self.startGrid.setLayout(self.startLayout)
         self.sub1Check = QPushButton('字幕 1')
@@ -503,6 +536,7 @@ class VideoDecoder(QDialog):
         self.encodeSetup.clicked.connect(self.setEncodeArgs)
         self.startLayout.addWidget(self.encodeSetup, 1, 3, 1, 2)
         self.outputEdit = QLineEdit()
+        self.outputEdit.setFocusPolicy(Qt.NoFocus)
         self.startLayout.addWidget(self.outputEdit, 2, 0, 1, 4)
         self.outputButton = QPushButton('保存路径')
         self.startLayout.addWidget(self.outputButton, 2, 4, 1, 1)
@@ -519,7 +553,7 @@ class VideoDecoder(QDialog):
         self.processBar = QProgressBar()
         self.processBar.setStyleSheet("QProgressBar{border:1px;text-align:center;background:white}")
         self.processBar.setMaximumWidth(450)
-        self.layout.addWidget(self.processBar, 6, 10, 1, 1)
+        self.layout.addWidget(self.processBar, 6, 10, 1, 2)
 
         self.totalFrames = 0
         self.old_decodeArgs = []
@@ -574,7 +608,7 @@ class VideoDecoder(QDialog):
             self.layerCheck.setStyleSheet('background-color:#31363b')
 
     def setSavePath(self):
-        savePath = QFileDialog.getSaveFileName(self, "选择视频输出文件夹", None, "MP4格式 (*.mp4)")[0]
+        savePath = QFileDialog.getSaveFileName(self, "选择视频输出文件夹", None, "MP4格式 (*.mp4);;MKV格式 (*.mkv)")[0]
         if savePath:
             self.outputEdit.setText(savePath)
 
@@ -765,16 +799,16 @@ class VideoDecoder(QDialog):
             self.decodeArgs.append([self.videoPath, self.layerCheckStatus, ''])
 
     def exportSub(self):
-        subtitlePath = QFileDialog.getSaveFileName(self, "选择字幕输出文件夹", None, "ASS字幕文件 (*.ass)")[0]
+        subtitlePath = QFileDialog.getSaveFileName(self, "选择字幕输出文件夹", None, "ass文件 (*.ass);;srt文件 (*.srt);;lrc文件 (*.lrc)")[0]
         if subtitlePath:
             self.writeAss(subtitlePath, False, True)
-            QMessageBox.information(self, '导出字幕', '导出完成', QMessageBox.Yes)
+            QMessageBox.information(self, '导出字幕', '导出完成', QMessageBox.Ok)
             self.saveToken.emit(True)
 
     def writeAss(self, outputPath='temp_sub.ass', preview=True, tip=False, pos=0, allSub=False):
         if allSub:
             self.collectArgs(True)
-        if outputPath:
+        if outputPath.endswith('.ass'):  # ass字幕
             ass = codecs.open(outputPath, 'w', 'utf_8_sig')
             ass.write('[Script Info]\n')
             ass.write('; Script generated by DD烤肉机2.0; Powered by 执鸣神君\n')
@@ -827,7 +861,7 @@ class VideoDecoder(QDialog):
                             (subNumber, self.styleNameList[num - 1], num, 'Hi! 我是第%s列字幕。' % num)
                         ass.write(line)
                 if tip:
-                    QMessageBox.information(self, '导出字幕', '导出完成', QMessageBox.Yes)
+                    QMessageBox.information(self, '导出字幕', '导出完成', QMessageBox.Ok)
             else:
                 if not pos:
                     for subNumber in self.subtitleArgs:
@@ -884,6 +918,27 @@ class VideoDecoder(QDialog):
                                     ass.write(line)
                                     break
             ass.close()
+        elif outputPath.endswith('.srt'):  # srt字幕
+            cnt = 1
+            srt = codecs.open(outputPath, 'w', 'utf_8_sig')
+            for subDict in self.subtitles.values():
+                for start in sorted(subDict.keys()):
+                    delta, text = subDict[start]
+                    end = ms2SRTTime(start + delta)
+                    start = ms2SRTTime(start)
+                    srt.write('%s\n%s --> %s\n%s\n\n' % (cnt, start, end, text))
+                    cnt += 1
+            srt.close()
+        elif outputPath.endswith('.lrc'):  # lrc字幕
+            lrc = codecs.open(outputPath, 'w', 'utf_8_sig')
+            lrc.write('[ti:]\n[ar:]\n[al:]\n[by:]\n[offset:0]\n')
+            for subDict in self.subtitles.values():
+                for start in sorted(subDict.keys()):
+                    _, text = subDict[start]
+                    start = ms2LRCTime(start)
+                    lrc.write('[%s]%s\n' % (start, text))
+            lrc.close()
+
 
     def generatePreview(self, force=False):
         self.collectArgs()
@@ -891,10 +946,10 @@ class VideoDecoder(QDialog):
             self.exportSubButton.setEnabled(False)
         else:
             self.exportSubButton.setEnabled(True)
-        if not self.videoPath or not self.outputEdit.text():
-            self.startButton.setEnabled(False)
-        else:
-            self.startButton.setEnabled(True)
+        # if not self.videoPath or not self.outputEdit.text():
+        #     self.startButton.setEnabled(False)
+        # else:
+        #     self.startButton.setEnabled(True)
         if self.decodeArgs != self.old_decodeArgs or self.videoPos != self.old_videoPos or force:
             if os.path.exists('temp_sub.jpg'):
                 os.remove('temp_sub.jpg')
@@ -930,59 +985,71 @@ class VideoDecoder(QDialog):
         self.setEncode.show()
 
     def exportVideo(self):
-        self.startButton.setText('停止')
-        self.startButton.setStyleSheet('background-color:#3daee9')
-        self.startButton.clicked.disconnect(self.exportVideo)
-        self.startButton.clicked.connect(self.terminateEncode)
-        self.processBar.setValue(0)
         outputPath = self.outputEdit.text()
-        try:
-            if os.path.exists(outputPath):
-                os.remove(outputPath)
-            encodeOK = True
-        except:
-            self.preview.setText('渲染失败 是否有进程正在占用：\n%s' % outputPath)
-            self.preview.setStyleSheet("QLabel{background:white;color:#232629}")
-            encodeOK = False
-        if encodeOK:
-            if os.path.exists('temp_sub.ass'):
-                os.remove('temp_sub.ass')
-            self.previewTimer.stop()
-            self.collectArgs()
-            self.writeAss(preview=False)
+        if not self.videoPath:
+            QMessageBox.information(self, '导出视频', '导出视频失败！请先在主界面选择视频打开', QMessageBox.Ok)
+        elif not outputPath:
+            QMessageBox.information(self, '导出视频', '导出视频失败！请选择保存路径', QMessageBox.Ok)
+        else:
+            self.startButton.setText('停止')
+            self.startButton.setStyleSheet('background-color:#3daee9')
+            self.startButton.clicked.disconnect(self.exportVideo)
+            self.startButton.clicked.connect(self.terminateEncode)
+            self.processBar.setValue(0)
+            try:
+                if os.path.exists(outputPath):
+                    os.remove(outputPath)
+                encodeOK = True
+            except:
+                self.preview.setText('渲染失败 是否有进程正在占用：\n%s' % outputPath)
+                self.preview.setStyleSheet("QLabel{background:white;color:#232629}")
+                encodeOK = False
+            if encodeOK:
+                if os.path.exists('temp_sub.ass'):
+                    os.remove('temp_sub.ass')
+                self.previewTimer.stop()
+                self.collectArgs()
+                self.writeAss(preview=False)
 
-            videoWidth = self.setEncode.exportVideoWidth.text()
-            videoHeight = self.setEncode.exportVideoHeight.text()
-            audio = ''
-            if self.setEncode.mixAudioPath.text():
-                audio = self.setEncode.mixAudioPath.text()
-            encoder = self.setEncode.encoder.currentIndex()
-            if not encoder:
-                preset = ['veryslow', 'slow', 'medium', 'fast', 'ultrafast'][self.setEncode.exportVideoPreset.currentIndex()]
-            else:
-                preset = ['slow', 'medium', 'fast'][self.setEncode.exportVideoPreset.currentIndex()]
-            bit = self.setEncode.exportVideoBitrate.text() + 'k'
-            fps = self.setEncode.exportVideoFPS.text()
-            cmd = ['ffmpeg.exe', '-y', '-i', self.videoPath]
-            if audio:
-                cmd += ['-i', audio, '-c:a', 'aac']
-            cmd += ['-s', '%sx%s' % (videoWidth, videoHeight), '-preset', preset, '-vf', 'ass=temp_sub.ass']
-            if encoder == 1:
-                cmd += ['-c:v', 'h264_nvenc']
-            elif encoder == 2:
-                cmd += ['-c:v', 'hevc_nvenc']
-            elif encoder == 3:
-                cmd += ['-c:v', 'h264_amf']
-            elif encoder == 4:
-                cmd += ['-c:v', 'hevc_amf']
-            cmd += ['-b:v', bit, '-r', fps]
-            cmd.append(outputPath)
+                videoWidth = self.setEncode.exportVideoWidth.text()
+                videoHeight = self.setEncode.exportVideoHeight.text()
+                audio = ''
+                if self.setEncode.mixAudioPath.text():
+                    audio = self.setEncode.mixAudioPath.text()
+                encoder = self.setEncode.encoder.currentIndex()
+                if not encoder:
+                    preset = ['veryslow', 'slow', 'medium', 'fast', 'ultrafast'][self.setEncode.exportVideoPreset.currentIndex()]
+                else:
+                    preset = ['slow', 'medium', 'fast'][self.setEncode.exportVideoPreset.currentIndex()]
+                bit = self.setEncode.exportVideoBitrate.text() + 'k'
+                fps = self.setEncode.exportVideoFPS.text()
+                if outputPath.endswith('.mp4'):
+                    cmd = ['ffmpeg.exe', '-y', '-i', self.videoPath]
+                    if audio:
+                        cmd += ['-i', audio, '-c:a', 'aac']
+                    cmd += ['-s', '%sx%s' % (videoWidth, videoHeight), '-preset', preset, '-vf', 'ass=temp_sub.ass']
+                    if encoder == 1:
+                        cmd += ['-c:v', 'h264_nvenc']
+                    elif encoder == 2:
+                        cmd += ['-c:v', 'hevc_nvenc']
+                    elif encoder == 3:
+                        cmd += ['-c:v', 'h264_amf']
+                    elif encoder == 4:
+                        cmd += ['-c:v', 'hevc_amf']
+                    cmd += ['-b:v', bit, '-r', fps]
+                    cmd.append(outputPath)
+                elif outputPath.endswith('.mkv'):
+                    cmd = ['ffmpeg.exe', '-y', '-i', self.videoPath]
+                    if audio:
+                        cmd += ['-i', audio]
+                    cmd += ['-i', 'temp_sub.ass', '-c', 'copy']
+                    cmd.append(outputPath)
 
-            self.videoEncoder = videoEncoder(self.videoPath, cmd)
-            self.videoEncoder.processBar.connect(self.setProcessBar)
-            self.videoEncoder.currentPos.connect(self.setEncodePreview)
-            self.videoEncoder.encodeResult.connect(self.encodeFinish)
-            self.videoEncoder.start()
+                self.videoEncoder = videoEncoder(self.videoPath, cmd)
+                self.videoEncoder.processBar.connect(self.setProcessBar)
+                self.videoEncoder.currentPos.connect(self.setEncodePreview)
+                self.videoEncoder.encodeResult.connect(self.encodeFinish)
+                self.videoEncoder.start()
 
     def setProcessBar(self, value):
         self.processBar.setValue(value)
@@ -1004,11 +1071,11 @@ class VideoDecoder(QDialog):
         if result:
             self.previewTimer.start()
             self.processBar.setValue(100)
-            QMessageBox.information(self, '导出视频', '导出完成', QMessageBox.Yes)
+            QMessageBox.information(self, '导出视频', '导出完成', QMessageBox.Ok)
         else:
             self.previewTimer.start()
             self.processBar.setValue(0)
-            QMessageBox.information(self, '导出视频', '导出视频失败！请检查参数或编码器是否选择正确', QMessageBox.Yes)
+            QMessageBox.information(self, '导出视频', '导出视频失败！请检查参数或编码器是否选择正确', QMessageBox.Ok)
         self.generatePreview(force=True)
 
     def terminateEncode(self):
@@ -1028,6 +1095,6 @@ class VideoDecoder(QDialog):
         self.videoEncoder.wait()
         del self.videoEncoder
         self.processBar.setValue(0)
-        QMessageBox.information(self, '导出视频', '中止导出', QMessageBox.Yes)
+        QMessageBox.information(self, '导出视频', '中止导出', QMessageBox.Ok)
         self.generatePreview(force=True)
         self.previewTimer.start()

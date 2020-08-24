@@ -1,14 +1,10 @@
 # -*- coding: utf-8 -*-
 
-import os, sys, subprocess, copy, time, psutil, codecs, shutil
-from PySide2.QtWidgets import QWidget, QMainWindow, QGridLayout, QFileDialog, QToolBar,\
-        QAction, QDialog, QStyle, QSlider, QLabel, QPushButton, QStackedWidget, QHBoxLayout,\
-        QLineEdit, QTableWidget, QAbstractItemView, QTableWidgetItem, QGraphicsTextItem, QMenu,\
-        QGraphicsScene, QGraphicsView, QGraphicsDropShadowEffect, QComboBox, QMessageBox, QColorDialog,\
-        QProgressBar, QTabWidget
-from PySide2.QtGui import QPixmap, QPainter, QWheelEvent, QMouseEvent,\
-    QPaintEvent
-from PySide2.QtCore import Qt, QTimer, QPoint, Signal, QThread, Signal, QSize
+import os, subprocess, time, psutil, shutil
+from PySide2.QtWidgets import QWidget, QGridLayout, QFileDialog, QDialog, QSlider, QApplication,\
+                              QLabel, QPushButton, QHBoxLayout, QLineEdit, QComboBox, QTabWidget, QMessageBox
+from PySide2.QtGui import QPixmap, QPainter, QWheelEvent, QMouseEvent
+from PySide2.QtCore import Qt, QTimer, QPoint, QThread, Signal, QSize
 
 
 def calSubTime(t):
@@ -203,43 +199,54 @@ class preview(QThread):
 
 
 class expand(QThread):
+    fail = Signal()
+
     def __init__(self, args, parent=None):
         super(expand, self).__init__(parent)
         self.args = args
 
     def run(self):
-        if os.path.exists('temp_video'):
-            shutil.rmtree('temp_video')
-        os.mkdir('temp_video')
-        shutil.copy(self.args['videoPath'], 'temp_video/tempVideo')
-
-        preProcessing = processingArg(self.args['preProcessing'])
-        postProcessing = processingArg(self.args['postProcessing'])
-        cmd = ['Anime4KCPP_CLI.exe', '-i', 'temp_video/tempVideo', '-o', 'temp_video/tempVideo_4K', '-p', self.args['passes'],
-               '-n', self.args['pushColorCount'], '-c', self.args['strengthColor'], '-g', self.args['strengthGradient'],
-               '-z', self.args['zoomFactor'], self.args['fastMode'], self.args['gpuMode'], '-v']
-        if preProcessing:
-            cmd += ['-b', '-r', preProcessing]
-        if postProcessing:
-            cmd += ['-a', '-e', postProcessing]
-        if self.args['ACNet']:
-            cmd += [self.args['ACNet'], self.args['hdnMode']]
-        with open('expand.bat', 'w') as batch:
-            batch.write('@echo off\nstart cmd /k "')
-            for c in cmd[:-1]:
-                batch.write(c + ' ')
-            batch.write(cmd[-1] + '"')
-        os.system('expand.bat')
-        finish = False
-        while not finish:
-            for f in os.listdir('temp_video'):
-                if 'tempVideo_4K' in f:
-                    finish = True
-                    print('Anime4K finish')
-                    time.sleep(3)
-                    shutil.move('temp_video/%s' % f, self.args['outputPath'])
-                    shutil.rmtree('temp_video')
-            time.sleep(3)
+        initToken = True
+        try:
+            if os.path.exists('temp_video'):
+                shutil.rmtree('temp_video')
+            os.mkdir('temp_video')
+        except:
+            try:
+                for f in os.listdir('temp_video'):
+                    os.remove('temp_video/%s' % f)
+            except:
+                initToken = False
+                self.fail.emit()  # 清空temp_video文件夹失败
+        if initToken:
+            shutil.copy(self.args['videoPath'], 'temp_video/tempVideo')
+            preProcessing = processingArg(self.args['preProcessing'])
+            postProcessing = processingArg(self.args['postProcessing'])
+            cmd = ['Anime4KCPP_CLI.exe', '-i', 'temp_video/tempVideo', '-o', 'temp_video/tempVideo_4K', '-p', self.args['passes'],
+                   '-n', self.args['pushColorCount'], '-c', self.args['strengthColor'], '-g', self.args['strengthGradient'],
+                   '-t', self.args['threads'], '-z', self.args['zoomFactor'], self.args['fastMode'], self.args['gpuMode'], '-v']
+            if preProcessing:
+                cmd += ['-b', '-r', preProcessing]
+            if postProcessing:
+                cmd += ['-a', '-e', postProcessing]
+            if self.args['ACNet']:
+                cmd += [self.args['ACNet'], self.args['hdnMode']]
+            with open('expand.bat', 'w') as batch:
+                batch.write('@echo off\nstart cmd /k "')
+                for c in cmd[:-1]:
+                    batch.write(c + ' ')
+                batch.write(cmd[-1] + '"')
+            os.system('expand.bat')
+            finish = False
+            while not finish:
+                for f in os.listdir('temp_video'):
+                    if 'tempVideo_4K' in f:
+                        finish = True
+                        time.sleep(5)
+                        shutil.move('temp_video/%s' % f, self.args['outputPath'])
+                        shutil.rmtree('temp_video')
+                        QMessageBox.information(self, 'Anime4K扩展', '扩展完成', QMessageBox.Ok)
+                time.sleep(5)
 
 
 class Slider(QSlider):
@@ -252,11 +259,15 @@ class Slider(QSlider):
         self.pointClicked.emit(event.pos())
 
 
-class Anime4KDialog(QDialog):
+class Anime4KDialog(QWidget):
     def __init__(self):
         super().__init__()
-        self.resize(1700, 790)
+        screenRect = QApplication.primaryScreen().geometry()
+        screenHeight = screenRect.height() * 2 / 3
+        screenWidth = screenRect.width() * 3 / 4
+        self.resize(screenWidth, screenHeight)
         self.setWindowTitle('Anime4K画质扩展')
+        self.showMaximized()
         self.videoPath = ''
         self.outputPath = ''
         self.videoWidth = 0
@@ -274,12 +285,18 @@ class Anime4KDialog(QDialog):
         self.previewTab = QTabWidget()
         layout.addWidget(self.previewTab, 0, 0, 4, 3)
 
-        self.preview = QLabel('效果预览')
-        self.preview.setFixedSize(1280, 720)
-        self.previewTab.addTab(self.preview, '预览')
-        self.preview.setScaledContents(True)
-        self.preview.setAlignment(Qt.AlignCenter)
-        self.preview.setStyleSheet("QLabel{background:white;}")
+        # self.preview = QLabel('效果预览')
+        # self.preview.setFixedSize(screenWidth * 4 / 5, screenWidth * 9 / 20)
+        #
+        # self.preview.setScaledContents(True)
+        # self.preview.setAlignment(Qt.AlignCenter)
+        # self.preview.setStyleSheet("QLabel{background:white;}")
+        self.preview = ImageWithMouseControl('')
+        previewWidget = QWidget()
+        previewWidgetLayout = QGridLayout()
+        previewWidget.setLayout(previewWidgetLayout)
+        previewWidgetLayout.addWidget(self.preview)
+        self.previewTab.addTab(previewWidget, '预览')
 
         compareWidget = QWidget()
         compareLayout = QHBoxLayout()
@@ -293,6 +310,7 @@ class Anime4KDialog(QDialog):
         compareLayout.addWidget(self.originPreview)
         compareLayout.addWidget(self.scaledPreview)
         self.previewTab.addTab(compareWidget, '对比')
+        self.previewTab.setCurrentIndex(1)
         self.point = ''
 
         self.previewSlider = Slider()
@@ -305,7 +323,7 @@ class Anime4KDialog(QDialog):
         optionWidget = QWidget()
         layout.addWidget(optionWidget, 0, 3, 5, 1)
         optionLayout = QGridLayout()
-        optionLayout.setVerticalSpacing(50)
+        optionLayout.setVerticalSpacing(screenHeight / 15)
         optionWidget.setLayout(optionLayout)
 
         optionLayout.addWidget(QLabel(), 0, 0, 1, 1)
@@ -405,9 +423,18 @@ class Anime4KDialog(QDialog):
         self.hdn.clicked.connect(self.setHDNMode)
         optionLayout.addWidget(self.hdn, 7, 4, 1, 2)
 
+        threadsLabel = QLabel('线程数')
+        threadsLabel.setAlignment(Qt.AlignCenter)
+        optionLayout.addWidget(threadsLabel, 8, 0, 1, 1)
+        self.threads = QComboBox()
+        cpuCount = psutil.cpu_count()
+        self.threads.addItems([str(i) for i in range(1, cpuCount + 1)])
+        self.threads.setCurrentIndex(cpuCount - 1)
+        optionLayout.addWidget(self.threads, 8, 1, 1, 1)
+
         zoom = float(self.zoomFactor.currentText())
         self.tipLabel = label('扩展后视频分辨率：%d x %d' % (self.videoWidth * zoom, self.videoHeight * zoom))
-        optionLayout.addWidget(self.tipLabel, 8, 0, 1, 6)
+        optionLayout.addWidget(self.tipLabel, 8, 2, 1, 4)
 
         self.startButton = QPushButton('开始扩展')
         self.startButton.setStyleSheet('background-color:#3daee9')
@@ -515,7 +542,7 @@ class Anime4KDialog(QDialog):
                 'strengthColor': str(self.strengthColor.currentIndex() / 10), 'strengthGradient': str(self.strengthGradient.currentIndex() / 10),
                 'zoomFactor': self.zoomFactor.currentText(), 'fastMode': '' if self.fastMode.currentIndex() == 0 else '-f',
                 'preProcessing': self.processing[:5], 'postProcessing': self.processing[5:], 'gpuMode': self.gpuMode,
-                'ACNet': self.acnetMode, 'hdnMode': self.hdnMode, 'position': self.videoPos}
+                'ACNet': self.acnetMode, 'hdnMode': self.hdnMode, 'threads': self.threads.currentText(), 'position': self.videoPos}
         if args != self.args and self.videoPath:
             self.args = args
             self.generatePreview()
@@ -524,8 +551,8 @@ class Anime4KDialog(QDialog):
         cmd = ['ffmpeg.exe', '-y', '-ss', str(self.videoPos), '-i', self.videoPath, '-frames', '1', '-q:v', '1', '-f', 'image2', 'temp_origin.jpg']
         p = subprocess.Popen(cmd)
         p.wait()
-        pixmap = QPixmap('temp_origin.jpg')
-        self.preview.setPixmap(pixmap)
+        # pixmap = QPixmap('temp_origin.jpg')
+        self.preview.setImagePath('temp_origin.jpg', self.scaleSize)
         self.originPreview.setImagePath('temp_origin.jpg', self.scaleSize)
         if self.point:
             self.originPreview.recivePaintEvent(self.point)
@@ -536,8 +563,8 @@ class Anime4KDialog(QDialog):
 
     def refreshPreview(self):
         self.timer.start()
-        pixmap = QPixmap('temp_4k.jpg')
-        self.preview.setPixmap(pixmap)
+        # pixmap = QPixmap('temp_4k.jpg')
+        self.preview.setImagePath('temp_4k.jpg', self.scaleSize)
         self.scaledPreview.setImagePath('temp_4k.jpg', self.scaleSize)
         self.originPreview.setImagePath('temp_origin.jpg', self.scaleSize)
         if self.point:
@@ -570,6 +597,7 @@ class Anime4KDialog(QDialog):
             self.tipLabel.setText('扩展后视频分辨率：%d x %d' % (self.videoWidth * zoom, self.videoHeight * zoom))
             
             self.expand = expand(self.args)
+            self.expand.fail.connect(self.initFail)
             self.expand.start()
 
 #             with open('expand.bat', 'w') as batch:
@@ -584,3 +612,7 @@ class Anime4KDialog(QDialog):
 #             batch.write(cmd[-1] + '"')
 #             batch.close()
 #             subprocess.Popen(['expand.bat'])
+
+    def initFail(self):
+        errorInfo = "请检查是否有另一个Anime4K进程正在运行，并手动删除烤肉机文件夹下的'temp_video'文件夹，如果存在的话"
+        QMessageBox.information(self, '4K扩展初始化失败', errorInfo, QMessageBox.Ok)

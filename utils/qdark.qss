@@ -47,18 +47,6 @@ QWidget:item:selected {
     background-color: #18465d;
 }
 
-QCheckBox {
-    spacing: 5px;
-    outline: none;
-    color: #eff0f1;
-    margin-bottom: 2px;
-}
-
-QCheckBox:disabled {
-    color: #76797C;
-}
-
-QCheckBox::indicator,
 QGroupBox::indicator {
     width: 18px;
     height: 18px;
@@ -68,14 +56,10 @@ QGroupBox::indicator {
     margin-left: 2px;
 }
 
-QCheckBox::indicator:unchecked,
 QGroupBox::indicator:unchecked {
     image: url(:/qss_icons/rc/checkbox_unchecked.png);
 }
 
-QCheckBox::indicator:unchecked:hover,
-QCheckBox::indicator:unchecked:focus,
-QCheckBox::indicator:unchecked:pressed,
 QGroupBox::indicator:unchecked:hover,
 QGroupBox::indicator:unchecked:focus,
 QGroupBox::indicator:unchecked:pressed {
@@ -83,14 +67,10 @@ QGroupBox::indicator:unchecked:pressed {
     image: url(:/qss_icons/rc/checkbox_unchecked_focus.png);
 }
 
-QCheckBox::indicator:checked,
 QGroupBox::indicator:checked {
     image: url(:/qss_icons/rc/checkbox_checked.png);
 }
 
-QCheckBox::indicator:checked:hover,
-QCheckBox::indicator:checked:focus,
-QCheckBox::indicator:checked:pressed,
 QGroupBox::indicator:checked:hover,
 QGroupBox::indicator:checked:focus,
 QGroupBox::indicator:checked:pressed {

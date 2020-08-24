@@ -95,9 +95,24 @@ class pay(QDialog):
         self.bossTable.clear()
         self.bossTable.setColumnCount(2)
         self.bossTable.setRowCount(len(bossList))
-        for y, i in enumerate(bossList):
-            self.bossTable.setItem(y, 0, QTableWidgetItem(i[0]))
-            self.bossTable.setItem(y, 1, QTableWidgetItem(i[1]))
-            self.bossTable.item(y, 0).setTextAlignment(Qt.AlignCenter)
-            self.bossTable.item(y, 1).setTextAlignment(Qt.AlignCenter)
-        self.bossTable.setHorizontalHeaderLabels(['石油王', '打赏'])
+        if len(bossList) > 3:
+            biggestBossList = []
+            for _ in range(3):
+                sc = 0
+                for cnt, i in enumerate(bossList):
+                    money = float(i[1].split(' ')[0])
+                    if money > sc:
+                        sc = money
+                        bossNum = cnt
+                biggestBossList.append(bossList.pop(bossNum))
+            for y, i in enumerate(biggestBossList):
+                self.bossTable.setItem(y, 0, QTableWidgetItem(i[0]))
+                self.bossTable.setItem(y, 1, QTableWidgetItem(i[1]))
+                self.bossTable.item(y, 0).setTextAlignment(Qt.AlignCenter)
+                self.bossTable.item(y, 1).setTextAlignment(Qt.AlignCenter)
+            for y, i in enumerate(bossList):
+                self.bossTable.setItem(y + 3, 0, QTableWidgetItem(i[0]))
+                self.bossTable.setItem(y + 3, 1, QTableWidgetItem(i[1]))
+                self.bossTable.item(y + 3, 0).setTextAlignment(Qt.AlignCenter)
+                self.bossTable.item(y + 3, 1).setTextAlignment(Qt.AlignCenter)
+            self.bossTable.setHorizontalHeaderLabels(['石油王', '打赏'])
