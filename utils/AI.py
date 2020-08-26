@@ -872,9 +872,9 @@ class Separate(QDialog):  # 界面
         self.networkToken = False
         self.translateToken = False
         self.voiceDict = {}
-        self.ping = pingTencent()  # 检查网络线程
-        self.ping.pingResult.connect(self.checkNetwork)
-        self.ping.start()
+        # self.ping = pingTencent()  # 检查网络线程
+        # self.ping.pingResult.connect(self.checkNetwork)
+        # self.ping.start()
 
     def setDefault(self, videoPath, duration, subtitleDict):
         self.videoPath = videoPath

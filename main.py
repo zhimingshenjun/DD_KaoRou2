@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
 
-import sys
+import os, sys, time
 from PySide2.QtWidgets import QApplication, QSplashScreen
 from PySide2.QtGui import QFont, QPixmap, QIcon
 from PySide2.QtCore import Qt
@@ -21,7 +21,15 @@ if __name__ == '__main__':
     app.setStyleSheet(qss)
     app.setFont(QFont('微软雅黑', 9))
     desktop = app.desktop()
-    splash = QSplashScreen(QPixmap(r'utils\splash.jpg'))
+    splashList = []
+    for f in os.listdir('utils'):
+        if f.endswith('.png') and 'splash_' in f:
+            splashList.append(r'utils\%s' % f)
+    if splashList:
+        splashPath = splashList[int(time.time()) % len(splashList)]
+    else:
+        splashPath = ''
+    splash = QSplashScreen(QPixmap(splashPath))
     splash.show()
     mainWindow = MainWindow()
     mainWindow.setWindowIcon(QIcon(r'utils\favicon.ico'))
