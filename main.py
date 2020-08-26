@@ -1,7 +1,8 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
 
-import os, sys, random, requests
+import os, sys, requests
+from random import randint
 from PySide2.QtWidgets import QApplication, QSplashScreen
 from PySide2.QtGui import QFont, QPixmap, QIcon
 from PySide2.QtCore import Qt, QThread
@@ -41,30 +42,28 @@ class downloadUpdates(QThread):
 
 
 if __name__ == '__main__':
+    QApplication.setAttribute(Qt.AA_UseHighDpiPixmaps, True)
+    QApplication.setAttribute(Qt.AA_EnableHighDpiScaling, True)
+    app = QApplication(sys.argv)
+    splashList = []
+    for f in os.listdir('utils'):
+        if f.endswith('.png') and 'splash_' in f:
+            splashList.append(r'utils\%s' % f)
+    if splashList:
+        splashPath = splashList[randint(0, len(splashList) - 1)]  # 随机选择启动封面
+    else:
+        splashPath = ''
+    splash = QSplashScreen(QPixmap(splashPath))
+    splash.show()
     qss = ''
     try:
         with open('utils/qdark.qss', 'r') as f:
             qss = f.read()
     except:
         print('警告！找不到QSS文件！请从github项目地址下载完整文件。')
-    QApplication.setAttribute(Qt.AA_UseHighDpiPixmaps, True)
-    QApplication.setAttribute(Qt.AA_EnableHighDpiScaling, True)
-    app = QApplication(sys.argv)
     app.setStyleSheet(qss)
     app.setFont(QFont('微软雅黑', 9))
     desktop = app.desktop()
-    splashList = []
-    for f in os.listdir('utils'):
-        if f.endswith('.png') and 'splash_' in f:
-            splashList.append(r'utils\%s' % f)
-    if splashList:
-        num = random.randint(0, len(splashList) - 1)  # 随机选择启动封面
-        print(num)
-        splashPath = splashList[num]
-    else:
-        splashPath = ''
-    splash = QSplashScreen(QPixmap(splashPath))
-    splash.show()
     mainWindow = MainWindow()
     mainWindow.setWindowIcon(QIcon(r'utils\favicon.ico'))
     screen = app.primaryScreen().geometry()
