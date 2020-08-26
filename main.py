@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
 
-import os, sys, time, requests
+import os, sys, random, requests
 from PySide2.QtWidgets import QApplication, QSplashScreen
 from PySide2.QtGui import QFont, QPixmap, QIcon
 from PySide2.QtCore import Qt, QThread
@@ -58,7 +58,9 @@ if __name__ == '__main__':
         if f.endswith('.png') and 'splash_' in f:
             splashList.append(r'utils\%s' % f)
     if splashList:
-        splashPath = splashList[int(time.time()) % len(splashList)]  # 根据当前时间随机选择启动封面
+        num = random.randint(0, len(splashList) - 1)  # 随机选择启动封面
+        print(num)
+        splashPath = splashList[num]
     else:
         splashPath = ''
     splash = QSplashScreen(QPixmap(splashPath))
