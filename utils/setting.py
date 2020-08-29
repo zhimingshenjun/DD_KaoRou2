@@ -35,7 +35,8 @@ class settingPage(QDialog):
                     if '=' in line:
                         try:
                             cfgName, cfgValue = line.strip().replace(' ', '').split('=')
-                            self.settingDict[cfgName] = int(cfgValue)
+                            if cfgName in self.settingDict:
+                                self.settingDict[cfgName] = int(cfgValue)
                         except Exception as e:
                             print(str(e))
         self.settingSignal.emit(self.settingDict)  # 发射默认配置给主界面

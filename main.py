@@ -31,13 +31,10 @@ class downloadUpdates(QThread):
                     for l in html:
                         if localSplashPath + '?raw=true' in l:
                             splashLink = 'https://github.com' + l.split('src="')[1].split('"')[0]
-                            try:
-                                response = requests.get(splashLink)
-                                img = response.content
-                                with open(localSplashPath, 'wb') as f:
-                                    f.write(img)  # 将图片按二进制写入本地文件
-                            except:
-                                pass
+                            response = requests.get(splashLink)
+                            img = response.content
+                            with open(localSplashPath, 'wb') as f:
+                                f.write(img)  # 将图片按二进制写入本地文件
 
     def run(self):
         utilsHtml = self.checkUtils()

@@ -15,7 +15,7 @@ def ms2SRTTime(ms):
     h, m = divmod(ms, 3600000)
     m, s = divmod(m, 60000)
     s, ms = divmod(s, 1000)
-    return '%02d:%02d:%02d,%03d' % (h, m, s, ms)
+    return '%s:%02d:%02d,%03d' % (h, m, s, ms)
 
 
 def ms2ASSTime(ms):
