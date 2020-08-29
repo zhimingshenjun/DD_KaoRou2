@@ -701,7 +701,18 @@ class MainWindow(QMainWindow):  # Main window
         self.subtitle.cellChanged.disconnect(self.subEdit)  # cellChanged信号只是用来进入subEdit函数 进来就断开
         repeat = self.subtitle.rowSpan(row, col)  # 获取合并格数
         text = self.subtitle.item(row, col).text()
-        self.setSubtitleDict(row, col, repeat, text)  # 更新字典
+        containToken = False
+        newS = int((row + self.row) * self.globalInterval)
+        subData = self.subtitleDict[col]
+        for start, subLine in subData.items():
+            delta = subLine[0]
+            end = start + delta
+            if newS >= start and newS < end:
+                self.subtitleDict[col][start] = [delta, text]
+                containToken = True
+                break
+        if not containToken:
+            self.setSubtitleDict(row, col, repeat, text)  # 更新字典
         for y in range(repeat):
             self.subtitle.setItem(row + y, col, QTableWidgetItem(text))  # 更新表格
             self.subtitle.item(row + y, col).setTextAlignment(Qt.AlignTop)  # 字幕居上
@@ -806,7 +817,7 @@ class MainWindow(QMainWindow):  # Main window
         delete = menu.addAction('删除')
         check = menu.addAction('检查')
         addSub = menu.addAction('导入')
-        cutSub = menu.addAction('裁剪平移')
+        # cutSub = menu.addAction('裁剪平移')
         replay = menu.addAction('循环播放')
         cancelReplay = menu.addAction('取消循环')
         action = menu.exec_(self.subtitle.mapToGlobal(pos))
@@ -920,11 +931,11 @@ class MainWindow(QMainWindow):  # Main window
             for x in xList:
                 self.addSubtitle(x)
                 break  # 只添加选中的第一列
-        elif action == cutSub:  # 裁剪字幕
-            for x in xList:
-                start = int(yList[0] * self.globalInterval)
-                end = int(yList[1] * self.globalInterval)
-                self.exportSubWindow(start, end, x + 1)
+        # elif action == cutSub:  # 裁剪字幕
+        #     for x in xList:
+        #         start = int(yList[0] * self.globalInterval)
+        #         end = int(yList[1] * self.globalInterval)
+        #         self.exportSubWindow(start, end, x + 1)
         elif action == replay:  # 循环播放
             self.replay = True
             self.playRange = [int((yList[0] + self.row) * self.globalInterval), int((yList[1] + self.row + 1) * self.globalInterval)]
@@ -1063,15 +1074,15 @@ class MainWindow(QMainWindow):  # Main window
         clearSub.setFixedHeight(31)
         toolBar.addWidget(clearSub)
         toolBar.addWidget(QLabel('  '))
-        outputSub = QPushButton('裁剪')
-        outputSub.setFixedWidth(50)
-        outputSub.setFixedHeight(31)
-        toolBar.addWidget(outputSub)
+        # outputSub = QPushButton('裁剪')
+        # outputSub.setFixedWidth(50)
+        # outputSub.setFixedHeight(31)
+        # toolBar.addWidget(outputSub)
 #         moveForward.clicked.connect(self.moveForward)
 #         moveAfterward.clicked.connect(self.moveAfterward)
         addSub.clicked.connect(lambda: self.addSubtitle(self.subEditComBox.currentIndex()))
         clearSub.clicked.connect(self.clearSub)
-        outputSub.clicked.connect(self.exportSubWindow)
+        # outputSub.clicked.connect(self.exportSubWindow)
 
     def setGlobalInterval(self, index):  # 设置全局间隔
         if not self.playStatus:
