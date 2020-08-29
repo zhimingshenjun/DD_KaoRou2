@@ -439,13 +439,14 @@ class separateQThread(QThread):  # AI分离人声音轨及打轴的核心线程
                     cutLevel = 600
                 if self.mode != 2:  # 非自选模式
                     voiceList = [[-2000, 1500]]
+                    start = 0
                     end = 0  # 人声结束时间
                     cnt = self.before  # 用户设置打轴前侧预留时间(ms)
                     while cnt < len(_wave) - 1:  # 开始判断人声区域
-                        rolloffToken = rolloffPlusSmoothScale[cnt] > 0.05 or rolloffPlusSmooth[cnt] > 100
+                        rolloffToken = rolloffPlusSmoothScale[cnt] > 0.05 and rolloffPlusSmooth[cnt] > 100
                         waveToken = abs(_wave[cnt]) > 800
                         varToken = varList[cnt] > thres
-                        if rolloffToken or waveToken or varToken:  # 以上条件满足
+                        if rolloffToken or waveToken or varToken or preStart:  # 以上条件满足
                             startCnt = copy.deepcopy(cnt)  # 打轴起始计数
                             if preStart:  # 接上一分钟
                                 start = preStart
@@ -487,39 +488,39 @@ class separateQThread(QThread):  # AI分离人声音轨及打轴的核心线程
                                                 break
                                     except:
                                         break
-                            end = cut * 60000 + cnt  # 结束时间即结束向后查询的时间
-                            delta = end - start
-#                             if delta >= 400:  # 过滤掉过短的碎语和笑声
-                            lastStart, lastDelta = voiceList[-1]
-                            if lastStart + lastDelta > start:  # 越界检测
-                                lastDelta = start - lastStart  # 修改上一个delta值
-                                voiceList = voiceList[:-1] + [[lastStart, lastDelta]]
-                            if self.level == 0:  # 宽松断轴
-                                # 若相邻的两条轴其中一方短于1.25s则连起来
-                                if lastStart + lastDelta >= start - self.flash - 300 and (lastDelta <= 2000 or delta <= 2000)\
-                                and lastDelta <= 3000 and delta <= 3000:  # 双方中若有一方大于3s则不合并
-                                    voiceList = voiceList[:-1] + [[lastStart, end - lastStart]]
-                                else:
-                                    voiceList.append([start, delta])  # 添加起止时间给信号槽发送
-                            elif self.level == 1:  # 中等断轴
-                                if lastStart + lastDelta >= start - self.flash - 300 and (lastDelta <= 1500 or delta <= 1500)\
-                                        and lastDelta <= 2500 and delta <= 2500:  # 双方中若有一方大于2.5s则不合并
-                                    voiceList = voiceList[:-1] + [[lastStart, end - lastStart]]
-                                else:
-                                    voiceList.append([start, delta])  # 添加起止时间给信号槽发送
-                            elif self.level == 2:  # 严格断轴
-                                if lastStart + lastDelta >= start - self.flash and (lastDelta <= 800 or delta <= 800)\
-                                        and lastDelta <= 1500 and delta <= 1500:  # 双方中若有一方大于1.5s则不合并
-                                    voiceList = voiceList[:-1] + [[lastStart, end - lastStart]]
-                                else:
-                                    voiceList.append([start, delta])  # 添加起止时间给信号槽发送
+                            if cnt < len(_wave):
+                                end = cut * 60000 + cnt  # 结束时间即结束向后查询的时间
+                                delta = end - start
+                                lastStart, lastDelta = voiceList[-1]
+                                if lastStart + lastDelta > start:  # 越界检测
+                                    lastDelta = start - lastStart  # 修改上一个delta值
+                                    voiceList = voiceList[:-1] + [[lastStart, lastDelta]]
+                                if self.level == 0:  # 宽松断轴
+                                    # 若相邻的两条轴其中一方短于1.25s则连起来
+                                    if lastStart + lastDelta >= start - self.flash - 300 and (lastDelta <= 2000 or delta <= 2000)\
+                                    and lastDelta <= 3000 and delta <= 3000:  # 双方中若有一方大于3s则不合并
+                                        voiceList = voiceList[:-1] + [[lastStart, end - lastStart]]
+                                    else:
+                                        voiceList.append([start, delta])  # 添加起止时间给信号槽发送
+                                elif self.level == 1:  # 中等断轴
+                                    if lastStart + lastDelta >= start - self.flash - 300 and (lastDelta <= 1500 or delta <= 1500)\
+                                            and lastDelta <= 2500 and delta <= 2500:  # 双方中若有一方大于2.5s则不合并
+                                        voiceList = voiceList[:-1] + [[lastStart, end - lastStart]]
+                                    else:
+                                        voiceList.append([start, delta])  # 添加起止时间给信号槽发送
+                                elif self.level == 2:  # 严格断轴
+                                    if lastStart + lastDelta >= start - self.flash and (lastDelta <= 800 or delta <= 800)\
+                                            and lastDelta <= 1500 and delta <= 1500:  # 双方中若有一方大于1.5s则不合并
+                                        voiceList = voiceList[:-1] + [[lastStart, end - lastStart]]
+                                    else:
+                                        voiceList.append([start, delta])  # 添加起止时间给信号槽发送
 
-                            start = 0
-                            cnt += 1
+                                start = 0
+                                cnt += 1
                         else:
                             cnt += 1  # 没检测到人声则+1
-                    if cnt > len(_wave) - 1:
-                        preStart = voiceList[-1][0]  # 每分钟结尾若超出则传递给下一分钟接着计算
+                    if cnt >= len(_wave) and start:
+                        preStart = start  # 每分钟结尾若超出则传递给下一分钟接着计算
                     else:
                         preStart = 0
                     modifyVoiceList = []
@@ -714,6 +715,22 @@ class Separate(QDialog):  # 界面
 
     def __init__(self):
         super().__init__()
+        self.settingDict = {'before': 30,  # 前侧留白
+                            'after': 300,  # 后侧留白
+                            'flash': 300,  # 防止闪轴
+                            'mode': 1,  # 打轴模式 0: 快速, 1: 灵敏, 2: 自选
+                            'level': 1,  # 断轴标准 0: 宽松, 1: 正常, 2: 严格
+                            }
+        if os.path.exists('config'):  # 导入已存在的设置
+            with open('config', 'r') as cfg:
+                for line in cfg:
+                    if '=' in line:
+                        try:
+                            cfgName, cfgValue = line.strip().replace(' ', '').split('=')
+                            self.settingDict[cfgName] = int(cfgValue)
+                        except Exception as e:
+                            print(str(e))
+
         self.resize(1000, 200)
         self.setWindowTitle('AI智能打轴')
         layout = QGridLayout()
@@ -773,7 +790,7 @@ class Separate(QDialog):  # 界面
         trackLayout.addWidget(trackModeLabel, 0, 6, 1, 1)
         self.trackMode = QComboBox()
         self.trackMode.addItems(['快速', '灵敏', '自选'])
-        self.trackMode.setCurrentIndex(1)
+        self.trackMode.setCurrentIndex(0)
         self.trackMode.currentIndexChanged.connect(self.showGraph)
         trackLayout.addWidget(self.trackMode, 0, 7, 1, 1)
 
