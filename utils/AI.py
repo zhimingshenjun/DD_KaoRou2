@@ -408,7 +408,7 @@ class separateQThread(QThread):  # AI分离人声音轨及打轴的核心线程
                     if self.mode == 1:  # 灵敏模式
                         varList = list(sklearn.preprocessing.minmax_scale(varList, axis=0))  # 缩放区间至0-1
                         med = np.median(varList)  # 1分钟内所有方差中位数
-                        avg = np.mean(varList)  # 1分钟内所有方差平均值
+                        avg = np.median(varList)  # 1分钟内所有方差平均值
                         thres = avg if avg > med else med
                         thres /= 4  # 灵敏模式阈值
                     elif self.mode == 2:  # 自选模式
@@ -483,7 +483,9 @@ class separateQThread(QThread):  # AI分离人声音轨及打轴的核心线程
                                             thresTime = (cnt - startCnt) / cutLevel
                                             if thresTime < 1:
                                                 thresTime = 1
-                                            if rolloffPlusSmoothScale[cnt] > 0.1 * thresTime or varList[cnt] > thres * thresTime:
+                                            if rolloffPlusSmoothScale[cnt] > 0.1 * thresTime or \
+                                                    varList[cnt] > thres * thresTime or \
+                                                    rolloffPlusSmoothScale[cnt] > 0.5:
                                                 finishToken = False  # 若未触发字幕过长token 则依旧延续字幕轴
                                                 break
                                     except:
@@ -718,8 +720,9 @@ class Separate(QDialog):  # 界面
         self.settingDict = {'before': 30,  # 前侧留白
                             'after': 300,  # 后侧留白
                             'flash': 300,  # 防止闪轴
-                            'mode': 1,  # 打轴模式 0: 快速, 1: 灵敏, 2: 自选
+                            'mode': 0,  # 打轴模式 0: 快速, 1: 灵敏, 2: 自选
                             'level': 1,  # 断轴标准 0: 宽松, 1: 正常, 2: 严格
+                            'fill': 'AI自动打轴',
                             }
         if os.path.exists('config'):  # 导入已存在的设置
             with open('config', 'r') as cfg:
@@ -727,7 +730,7 @@ class Separate(QDialog):  # 界面
                     if '=' in line:
                         try:
                             cfgName, cfgValue = line.strip().replace(' ', '').split('=')
-                            self.settingDict[cfgName] = int(cfgValue)
+                            self.settingDict[cfgName] = cfgValue
                         except Exception as e:
                             print(str(e))
 
@@ -762,7 +765,8 @@ class Separate(QDialog):  # 界面
         beforeLabel = QLabel('  前侧留白(ms)')
         beforeLabel.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
         trackLayout.addWidget(beforeLabel, 0, 0, 1, 1)
-        self.beforeEdit = QLineEdit('30')
+        self.beforeEdit = QLineEdit(str(self.settingDict['before']))
+        self.beforeEdit.textChanged.connect(self.changeSetting)
         validator = QIntValidator()
         validator.setRange(0, 5000)
         self.beforeEdit.setValidator(validator)
@@ -772,7 +776,8 @@ class Separate(QDialog):  # 界面
         afterLabel = QLabel('  后侧留白(ms)')
         afterLabel.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
         trackLayout.addWidget(afterLabel, 0, 2, 1, 1)
-        self.afterEdit = QLineEdit('300')
+        self.afterEdit = QLineEdit(str(self.settingDict['after']))
+        self.afterEdit.textChanged.connect(self.changeSetting)
         self.afterEdit.setValidator(validator)
         self.afterEdit.setFixedWidth(50)
         trackLayout.addWidget(self.afterEdit, 0, 3, 1, 1)
@@ -780,7 +785,8 @@ class Separate(QDialog):  # 界面
         antiFlashLabel = QLabel('  防止闪轴(ms)')
         antiFlashLabel.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
         trackLayout.addWidget(antiFlashLabel, 0, 4, 1, 1)
-        self.antiFlash = QLineEdit('300')
+        self.antiFlash = QLineEdit(str(self.settingDict['flash']))
+        self.antiFlash.textChanged.connect(self.changeSetting)
         self.antiFlash.setValidator(validator)
         self.antiFlash.setFixedWidth(50)
         trackLayout.addWidget(self.antiFlash, 0, 5, 1, 1)
@@ -790,7 +796,8 @@ class Separate(QDialog):  # 界面
         trackLayout.addWidget(trackModeLabel, 0, 6, 1, 1)
         self.trackMode = QComboBox()
         self.trackMode.addItems(['快速', '灵敏', '自选'])
-        self.trackMode.setCurrentIndex(0)
+        self.trackMode.setCurrentIndex(int(self.settingDict['mode']))
+        self.trackMode.currentIndexChanged.connect(self.changeSetting)
         self.trackMode.currentIndexChanged.connect(self.showGraph)
         trackLayout.addWidget(self.trackMode, 0, 7, 1, 1)
 
@@ -799,13 +806,15 @@ class Separate(QDialog):  # 界面
         trackLayout.addWidget(cutLabel, 0, 8, 1, 1)
         self.cutLevel = QComboBox()
         self.cutLevel.addItems(['宽松', '正常', '严格'])
-        self.cutLevel.setCurrentIndex(1)
+        self.cutLevel.setCurrentIndex(int(self.settingDict['level']))
+        self.cutLevel.currentIndexChanged.connect(self.changeSetting)
         trackLayout.addWidget(self.cutLevel, 0, 9, 1, 1)
         fillLabel = QLabel('  填充字符')
         fillLabel.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
         trackLayout.addWidget(fillLabel, 0, 10, 1, 1)
         self.fillWord = QLineEdit()
-        self.fillWord.setText('AI自动识别')
+        self.fillWord.setText(str(self.settingDict['fill']))
+        self.fillWord.textChanged.connect(self.changeSetting)
         trackLayout.addWidget(self.fillWord, 0, 11, 1, 1)
         self.outputIndex = QComboBox()
         self.outputIndex.addItems(['输出至第%s列' % i for i in range(1, 6)])
@@ -898,6 +907,21 @@ class Separate(QDialog):  # 界面
         self.duration = duration
         self.subtitleDict = subtitleDict
         self.resetStartEnd()
+
+    def changeSetting(self):
+        self.settingDict = {'before': self.beforeEdit.text(),  # 前侧留白
+                            'after': self.afterEdit.text(),  # 后侧留白
+                            'flash': self.antiFlash.text(),  # 防止闪轴
+                            'mode': self.trackMode.currentIndex(),  # 打轴模式 0: 快速, 1: 灵敏, 2: 自选
+                            'level': self.cutLevel.currentIndex(),  # 断轴标准 0: 宽松, 1: 正常, 2: 严格
+                            'fill': self.fillWord.text(),
+                            }
+        try:
+            with open('config', 'w') as cfg:  # 尝试更新配置文件
+                for cfgName, cfgValue in self.settingDict.items():
+                    cfg.write('%s=%s\n' % (cfgName, cfgValue))
+        except Exception as e:
+            print(str(e))
 
     def showGraph(self, index):  # 隐藏或显示阈值图
         if index != 2:

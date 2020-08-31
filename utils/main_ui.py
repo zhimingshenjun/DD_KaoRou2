@@ -63,7 +63,7 @@ def cnt2Time(cnt, interval):
     '''
     m, s = divmod(int(cnt * interval), 60000)
     s, ms = divmod(s, 1000)
-    return '%s:%02d.%03d' % (m, s, ms)
+    return ('%s:%02d.%03d' % (m, s, ms))[:-1]
 
 
 def ms2Time(ms):
@@ -354,7 +354,7 @@ class MainWindow(QMainWindow):  # Main window
         self.setting.settingSignal.connect(self.changeSetting)
         self.tableRefresh = True
         if os.path.exists('config'):  # 导入已存在的设置
-            settingDict = {'tableRefresh': 0,  # 0: 开启, 1: 关闭
+            self.settingDict = {'tableRefresh': 0,  # 0: 开启, 1: 关闭
                            'tableRefreshFPS': 0,  # 0: 60FPS, 1: 30FPS, 2: 20FPS, 3: 10FPS
                            'graphRefreshFPS': 1,  # 0: 60FPS, 1: 30FPS, 2: 20FPS, 3: 10FPS
                            }
@@ -363,12 +363,12 @@ class MainWindow(QMainWindow):  # Main window
                     if '=' in line:
                         try:
                             cfgName, cfgValue = line.strip().replace(' ', '').split('=')
-                            if cfgName in settingDict:
-                                settingDict[cfgName] = int(cfgValue)
+                            if cfgName in self.settingDict:
+                                self.settingDict[cfgName] = cfgValue
                         except Exception as e:
                             print(str(e))
-            self.tableRefresh = [True, False][settingDict['tableRefresh']]
-            self.changeSetting(settingDict)
+            self.tableRefresh = [True, False][int(self.settingDict['tableRefresh'])]
+            self.changeSetting(self.settingDict)
 
         self.videoWindowSizePreset = {0: (640, 360), 1: (800, 450), 2: (1280, 720), 3: (1366, 768),
                                       4: (1600, 900), 5: (1920, 1080), 6: (2560, 1600)}
@@ -1307,10 +1307,11 @@ class MainWindow(QMainWindow):  # Main window
             self.graphTimer.timeout.connect(self.refreshGraph)
 
     def changeSetting(self, settingDict):  # 配置设置参数
-        self.tableRefresh = [True, False][settingDict['tableRefresh']]
-        self.tableRefreshLimit = [15, 30, 50, 100][settingDict['tableRefreshFPS']]
+        self.settingDict = settingDict
+        self.tableRefresh = [True, False][int(settingDict['tableRefresh'])]
+        self.tableRefreshLimit = [15, 30, 50, 100][int(settingDict['tableRefreshFPS'])]
         self.timer.setInterval(self.tableRefreshLimit)
-        self.graphTimer.setInterval([15, 30, 50, 100][settingDict['graphRefreshFPS']])
+        self.graphTimer.setInterval([15, 30, 50, 100][int(settingDict['graphRefreshFPS'])])
 
     def popDnld(self):
         self.releaseKeyboard()
