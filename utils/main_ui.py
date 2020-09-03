@@ -713,6 +713,8 @@ class MainWindow(QMainWindow):  # Main window
                 break
         if not containToken:
             self.setSubtitleDict(row, col, repeat, text)  # 更新字典
+        else:
+            self.updateBackend()  # 备份并刷新显示
         for y in range(repeat):
             self.subtitle.setItem(row + y, col, QTableWidgetItem(text))  # 更新表格
             self.subtitle.item(row + y, col).setTextAlignment(Qt.AlignTop)  # 字幕居上
@@ -1824,7 +1826,7 @@ class MainWindow(QMainWindow):  # Main window
                         elif key in [Qt.Key_W, Qt.Key_2]:
                             if delta > self.globalInterval:
                                 del self.subtitleDict[x][start]  # 删除旧轴
-                                start += self.globalInterval  # 向后-1间隔时长
+                                start += int(self.globalInterval)  # 向后-1间隔时长
                                 self.subtitleDict[x][start] = [int(delta - self.globalInterval), text]  # 更新至字典
                                 self.position = start - int(10 * self.globalInterval)  # 预留10行
                                 self.refreshTable(self.position, select=10)  # 刷新表格
