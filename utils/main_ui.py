@@ -8,8 +8,7 @@ from PySide2.QtWidgets import QWidget, QMainWindow, QGridLayout, QFileDialog, QT
 from PySide2.QtMultimedia import QMediaPlayer
 from PySide2.QtMultimediaWidgets import QGraphicsVideoItem
 from PySide2.QtGui import QIcon, QKeySequence, QFont, QColor
-from PySide2.QtCore import Qt, QTimer, QEvent, QPoint, Signal, QSizeF, QUrl, QItemSelectionModel,\
-    QModelIndex, QPersistentModelIndex
+from PySide2.QtCore import Qt, QTimer, QEvent, QPoint, Signal, QSizeF, QUrl, QItemSelectionModel
 from utils.youtube_downloader import YoutubeDnld
 from utils.subtitle import exportSubtitle
 from utils.videoDecoder import VideoDecoder
@@ -300,7 +299,7 @@ class MainWindow(QMainWindow):  # Main window
         self.tablePreset = ['#AI自动识别', True]
         self.refreshMainAudioToken = False
         self.refreshVoiceToken = False  # 刷新AI识别人声音频
-        self.reloadToken = False  # 重载视频信号
+        # self.reloadToken = False  # 重载视频信号
 
         self.assSelect = assSelect()
         self.assSelect.assSummary.connect(self.addASSSub)
@@ -372,7 +371,11 @@ class MainWindow(QMainWindow):  # Main window
 
         self.videoWindowSizePreset = {0: (640, 360), 1: (800, 450), 2: (1280, 720), 3: (1366, 768),
                                       4: (1600, 900), 5: (1920, 1080), 6: (2560, 1600)}
-        self.videoWindowSizeIndex = 2
+        for self.videoWindowSizeIndex, preset in self.videoWindowSizePreset.items():
+            w, h = preset
+            if w >= self.width() / 2 or h >= self.height() / 2:
+                break
+        # self.videoWindowSizeIndex = 2
         self.sepMain = sepMainAudio(self.videoPath, self.duration)  # 创建切片主音频线程对象
         self.setPlayer()
         self.setGraph()
@@ -806,7 +809,7 @@ class MainWindow(QMainWindow):  # Main window
     def refreshSubPreview(self):  # 修改实时预览字幕
         self.videoDecoder.copySubtitle(self.subtitleDict)  # 更新字幕内容给输出
         self.videoDecoder.writeAss(self.subPreview, False, True, allSub=True)  # 写入ass文件
-        self.reloadToken = True
+        # self.reloadToken = True
         self.player.setPosition(self.position)  # 刷新视频
 
     def popTableMenu(self, pos):  # 右键菜单
@@ -987,6 +990,8 @@ class MainWindow(QMainWindow):  # Main window
         playMenu.addAction(previewAction)
         anime4KAction = QAction(QIcon.fromTheme('document-open'), '&Anime4K画质扩展', self, triggered=self.popAnime4K)
         playMenu.addAction(anime4KAction)
+        reloadVideo = QAction(QIcon.fromTheme('document-open'), '&尝试解决字幕卡死', self, triggered=self.reloadVideo)
+        playMenu.addAction(reloadVideo)
 
         decodeMenu = self.menuBar().addMenu('&输出')
         decodeAction = QAction(QIcon.fromTheme('document-open'), '&输出字幕及视频', self, triggered=self.decode)
@@ -1266,6 +1271,11 @@ class MainWindow(QMainWindow):  # Main window
             self.playStatus = True
             self.saveToken = False
             self.videoSlider.setEnabled(True)
+            w, h = self.videoWindowSizePreset[self.videoWindowSizeIndex]
+            self.stack.setFixedSize(w, h)
+            self.view.setFixedSize(w, h)
+            self.scene.setSceneRect(5, 5, w - 10, h - 10)
+            self.playerWidget.setSize(QSizeF(w, h))
             self.playRange = [0, self.duration]  # 播放范围
             if self.sepMain.isRunning:  # 检测上一个视频的切片主音频进程是否还在进行
                 self.sepMain.terminate()
@@ -1336,6 +1346,14 @@ class MainWindow(QMainWindow):  # Main window
         self.anime4KWindow.setDefault(self.videoPath, self.duration, self.videoWidth, self.videoHeight)
         self.anime4KWindow.hide()
         self.anime4KWindow.show()
+
+    def reloadVideo(self):
+        position = self.player.position()
+        self.player.stop()
+        self.player.setMedia(QUrl.fromLocalFile(''))
+        self.player.stop()
+        self.player.setMedia(QUrl.fromLocalFile(self.videoPath))
+        self.player.setPosition(position)
 
     def addMainAudioWave(self, x, y):  # 添加主音频数据
         self.mainAudioWaveX = x
@@ -1484,12 +1502,12 @@ class MainWindow(QMainWindow):  # Main window
 
     def mediaPlay(self):
         if self.playStatus:
-            if self.reloadToken:
-                url = QUrl.fromLocalFile(self.videoPath)
-                self.player.stop()
-                self.player.setMedia(url)
-                self.player.setPosition(self.position)
-                self.reloadToken = False
+            # if self.reloadToken:
+            #     url = QUrl.fromLocalFile(self.videoPath)
+            #     self.player.stop()
+            #     self.player.setMedia(url)
+            #     self.player.setPosition(self.position)
+            #     self.reloadToken = False
             self.stack.setCurrentIndex(1)
             self.player.play()
             try:
