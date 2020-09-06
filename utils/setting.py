@@ -35,8 +35,7 @@ class settingPage(QDialog):
                     if '=' in line:
                         try:
                             cfgName, cfgValue = line.strip().replace(' ', '').split('=')
-                            if cfgName in self.settingDict:
-                                self.settingDict[cfgName] = int(cfgValue)
+                            self.settingDict[cfgName] = cfgValue
                         except Exception as e:
                             print(str(e))
         self.settingSignal.emit(self.settingDict)  # 发射默认配置给主界面
@@ -44,21 +43,21 @@ class settingPage(QDialog):
         layout.addWidget(label('表格进度跟随鼠标'), 0, 0, 1, 1)
         self.tableRefreshCombox = QComboBox()
         self.tableRefreshCombox.addItems(['开启', '关闭'])
-        self.tableRefreshCombox.setCurrentIndex(self.settingDict['tableRefresh'])
+        self.tableRefreshCombox.setCurrentIndex(int(self.settingDict['tableRefresh']))
         self.tableRefreshCombox.currentIndexChanged.connect(self.changeSetting)
         layout.addWidget(self.tableRefreshCombox, 0, 1, 1, 1)
 
         layout.addWidget(label('限制表格刷新率'), 1, 0, 1, 1)
         self.tableRefreshFPSCombox = QComboBox()
         self.tableRefreshFPSCombox.addItems(['60FPS (有点吃配置)', '30FPS (推荐)', '20FPS', '10FPS'])
-        self.tableRefreshFPSCombox.setCurrentIndex(self.settingDict['tableRefreshFPS'])
+        self.tableRefreshFPSCombox.setCurrentIndex(int(self.settingDict['tableRefreshFPS']))
         self.tableRefreshFPSCombox.currentIndexChanged.connect(self.changeSetting)
         layout.addWidget(self.tableRefreshFPSCombox, 1, 1, 1, 1)
 
         layout.addWidget(label('限制波形图刷新率'), 2, 0, 1, 1)
         self.graphRefreshFPSCombox = QComboBox()
         self.graphRefreshFPSCombox.addItems(['60FPS (比较吃配置)', '30FPS (推荐)', '20FPS', '10FPS'])
-        self.graphRefreshFPSCombox.setCurrentIndex(self.settingDict['graphRefreshFPS'])
+        self.graphRefreshFPSCombox.setCurrentIndex(int(self.settingDict['graphRefreshFPS']))
         self.graphRefreshFPSCombox.currentIndexChanged.connect(self.changeSetting)
         layout.addWidget(self.graphRefreshFPSCombox, 2, 1, 1, 1)
 
