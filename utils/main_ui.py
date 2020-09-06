@@ -741,23 +741,25 @@ class MainWindow(QMainWindow):  # Main window
         keyList = copy.deepcopy(list(self.subtitleDict[col].keys()))
         for oldS in keyList:
             oldE = self.subtitleDict[col][oldS][0] + oldS
-            if (newS <= oldS and newE > oldS) or (newS < oldE and newE >= oldE):
+            if (newS <= oldS and newE > oldS + int(self.globalInterval)) or \
+                    (newS < oldE - int(self.globalInterval) and newE >= oldE):
                 del self.subtitleDict[col][oldS]
                 if oldS < old_start_end[0]:
                     old_start_end[0] = oldS
                 if oldE > old_start_end[1]:
                     old_start_end[1] = oldE
             if concat:
-                if newS > oldS and newS < oldE:
+                if newS > oldS and newS < oldE - int(self.globalInterval):
                     newS = oldS
                     if oldS < start_end[0]:
                         start_end[0] = oldS
-                if newE > oldS and newE < oldE:
+                if newE > oldS + int(self.globalInterval) and newE < oldE:
                     newE = oldE
                     if oldE > start_end[1]:
                         start_end[1] = oldE
         if concat:
             if start_end[0] != 99999999 and start_end[1]:
+                print(start_end, text)
                 self.subtitleDict[col][start_end[0]] = [start_end[1], text]
             else:
                 start = newS
