@@ -759,8 +759,7 @@ class MainWindow(QMainWindow):  # Main window
                         start_end[1] = oldE
         if concat:
             if start_end[0] != 99999999 and start_end[1]:
-                print(start_end, text)
-                self.subtitleDict[col][start_end[0]] = [start_end[1], text]
+                self.subtitleDict[col][start_end[0]] = [start_end[1] - start_end[0], text]
             else:
                 start = newS
                 end = newE
@@ -771,7 +770,7 @@ class MainWindow(QMainWindow):  # Main window
                         start = subEnd
                     if end > subStart and end < subEnd:
                         end = subStart
-                self.subtitleDict[col][round(start)] = [round(end - start), text]  # 更新字典
+                self.subtitleDict[col][int(start)] = [int(end - start), text]  # 更新字典
         elif old_start_end[0] != 99999999 and old_start_end[1]:
             start, end = old_start_end
             subStartList = sorted(self.subtitleDict[col].keys())
@@ -894,28 +893,29 @@ class MainWindow(QMainWindow):  # Main window
             self.assCheck.position.connect(self.setPlayerPosition)
             self.assCheck.show()
         elif action == setSpan:  # 合并函数
-            for x in xList:  # 循环所有选中的列
-                firstItem = ''
-                for y in range(yList[0], yList[1] + 1):  # 从选中行开始往下查询到第一个有效值后退出 一直没找到则为空
-                    if self.subtitle.item(y, x):
-                        if self.subtitle.item(y, x).text():
-                            firstItem = self.subtitle.item(y, x).text()
-                            break
-                for y in range(yList[0], yList[1] + 1):
-                    if self.subtitle.rowSpan(y, x) > 1:
-                        self.subtitle.setSpan(y, x, 1, 1)  # 清除合并格子
-                self.subtitle.setItem(yList[0], x, QTableWidgetItem(firstItem))  # 全部填上firstItem
-                self.subtitle.item(yList[0], x).setTextAlignment(Qt.AlignTop)  # 字幕居上
-                self.subtitle.setSpan(yList[0], x, yList[1] - yList[0] + 1, 1)  # 合并单元格
-                delta = int((yList[1] - yList[0] + 1) * self.globalInterval)
-                if delta < 500 or delta > 8000:  # 持续时间小于500ms或大于8s
-                    tableColor = '#B22222'
-                elif delta > 4500:  # 持续时间大于4.5s且小于8s
-                    tableColor = '#FA8072'
-                else:
-                    tableColor = '#35545d'
-                self.subtitle.item(yList[0], x).setBackground(QColor(tableColor))  # 第一个单元格填上颜色即可
-                self.setSubtitleDict(yList[0], x, yList[1] - yList[0] + 1, firstItem, concat=True)  # 更新表格
+            if yList[0] < yList[-1]:
+                for x in xList:  # 循环所有选中的列
+                    firstItem = ''
+                    for y in range(yList[0], yList[1] + 1):  # 从选中行开始往下查询到第一个有效值后退出 一直没找到则为空
+                        if self.subtitle.item(y, x):
+                            if self.subtitle.item(y, x).text():
+                                firstItem = self.subtitle.item(y, x).text()
+                                break
+                    for y in range(yList[0], yList[1] + 1):
+                        if self.subtitle.rowSpan(y, x) > 1:
+                            self.subtitle.setSpan(y, x, 1, 1)  # 清除合并格子
+                    self.subtitle.setItem(yList[0], x, QTableWidgetItem(firstItem))  # 全部填上firstItem
+                    self.subtitle.item(yList[0], x).setTextAlignment(Qt.AlignTop)  # 字幕居上
+                    self.subtitle.setSpan(yList[0], x, yList[1] - yList[0] + 1, 1)  # 合并单元格
+                    delta = (yList[1] - yList[0] + 1) * int(self.globalInterval)
+                    if delta < 500 or delta > 8000:  # 持续时间小于500ms或大于8s
+                        tableColor = '#B22222'
+                    elif delta > 4500:  # 持续时间大于4.5s且小于8s
+                        tableColor = '#FA8072'
+                    else:
+                        tableColor = '#35545d'
+                    self.subtitle.item(yList[0], x).setBackground(QColor(tableColor))  # 第一个单元格填上颜色即可
+                    self.setSubtitleDict(yList[0], x, yList[1] - yList[0] + 1, firstItem, concat=True)  # 更新表格
         elif action == clrSpan:  # 拆分
             clearToken = False
             for x in xList:
@@ -1396,8 +1396,8 @@ class MainWindow(QMainWindow):  # Main window
                         if (sub_start > start and sub_start < end) or (sub_end > start and sub_end < end) or\
                            (sub_start < start and sub_end > end):
                             subtitleLine[x].append([sub_start, sub_end])
-                mp3Path = os.path.join(self.dir, r'temp_audio\audio_original.aac')
-                self.mainAudio.plot(xList, yList, position, step, [-self.mainAudioMax, self.mainAudioMax], subtitleLine, mp3Path)
+                self.mainAudio.mp3Path = os.path.join(self.dir, r'temp_audio\audio_original.aac')
+                self.mainAudio.plot(xList, yList, position, step, [-self.mainAudioMax, self.mainAudioMax], subtitleLine)
 
             if self.refreshVoiceToken:  # 绘制AI产生的人声波形
                 pos = int((position / self.duration) * len(self.voiceWaveX))
@@ -1414,12 +1414,13 @@ class MainWindow(QMainWindow):  # Main window
                 xList = self.voiceWaveX[start:end:step]
                 if self.voiceMedia:
                     yList = self.voiceWaveY[start:end:step]
-                    mp3Path = os.path.join(self.dir, r'temp_audio\vocals.mp3')
+                    # mp3Path = os.path.join(self.dir, r'temp_audio\vocals.mp3')
                 else:
                     yList = self.bgmWaveY[start:end:step]
-                    mp3Path = os.path.join(self.dir, r'temp_audio\bgm.mp3')
+                    # mp3Path = os.path.join(, r'temp_audio\bgm.mp3')
+                self.voiceAudio.mp3Path = self.dir + r'\temp_audio'
                 self.voiceAudio.plot(xList, yList, self.voiceMedia, position, step,
-                                     [-self.mainAudioMax, self.mainAudioMax], subtitleLine, mp3Path)
+                                     [-self.mainAudioMax, self.mainAudioMax], subtitleLine)
 
     def playMainAudio(self):  # 播放主音频
         if not self.playStatus:
