@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
 
+import shutil
 import pyqtgraph as pg
 pg.setConfigOption('background', '#232629')
 from PySide2.QtWidgets import QWidget, QMainWindow, QGridLayout, QFileDialog, QToolBar,\
@@ -34,6 +35,7 @@ class graph_main(QWidget):  # 主音轨波形图
 
     def __init__(self):
         super().__init__()
+        self.mp3Path = ''
         layout = QVBoxLayout(self)
         self.graph = pg.PlotWidget()
         self.graph.addLegend(offset=(0, 1))  # 图例
@@ -49,10 +51,27 @@ class graph_main(QWidget):  # 主音轨波形图
         self.ax = self.graph.getAxis('bottom')  # 底部时间戳
 
     def mousePressEvent(self, event):
-        self.clicked.emit()
+        if event.buttons() == Qt.LeftButton:
+            self.clicked.emit()
+        elif event.buttons() == Qt.RightButton:
+            self.popTableMenu(event.pos())
 
-    def plot(self, x, y, h, step, limit=[-200, 200], subtitle={}, mp3Path=''):
-        self.graph.setTitle(mp3Path)
+    def popTableMenu(self, pos):
+        pos = QPoint(pos.x() + 3, pos.y() - 4)
+        menu = QMenu()
+        exportAudio = menu.addAction('导出音频文件')
+        action = menu.exec_(self.graph.mapToGlobal(pos))
+        if action == exportAudio:
+            if not self.mp3Path:
+                QMessageBox.warning(self, '未检测到音轨文件', '请导入视频并确保视频音轨正常', QMessageBox.Ok)
+            else:
+                mp3Path = QFileDialog.getSaveFileName(self, "选择音频输出文件夹", None, "(*.acc)")[0]
+                if mp3Path:
+                    shutil.copy(self.mp3Path, mp3Path)
+                    QMessageBox.information(self, '导出音轨文件', '导出完成', QMessageBox.Ok)
+
+    def plot(self, x, y, h, step, limit=[-200, 200], subtitle={}):
+        # self.graph.setTitle(mp3Path)
         self.wavePlot.setData(x, y)
         self.currentPos.setValue(h)
         for num, subLine in subtitle.items():
@@ -85,6 +104,7 @@ class graph_vocal(QWidget):  # 人声音轨波形图
 
     def __init__(self):
         super().__init__()
+        self.mp3Path = ''
         layout = QVBoxLayout(self)
         self.graph = pg.PlotWidget()
         self.graph.addLegend(offset=(0, 1))  # 图例
@@ -101,10 +121,30 @@ class graph_vocal(QWidget):  # 人声音轨波形图
         self.ax = self.graph.getAxis('bottom')  # 底部时间戳
 
     def mousePressEvent(self, event):
-        self.clicked.emit()
+        if event.buttons() == Qt.LeftButton:
+            self.clicked.emit()
+        elif event.buttons() == Qt.RightButton:
+            self.popTableMenu(event.pos())
 
-    def plot(self, x, y, voiceToken, h, step, limit=[-200, 200], subtitle={}, mp3Path=''):
-        self.graph.setTitle(mp3Path)
+    def popTableMenu(self, pos):
+        pos = QPoint(pos.x() + 3, pos.y() - 4)
+        menu = QMenu()
+        exportAudio = menu.addAction('导出音频文件')
+        action = menu.exec_(self.graph.mapToGlobal(pos))
+        if action == exportAudio:
+            if not self.mp3Path:
+                QMessageBox.warning(self, '未检测到音轨文件', '请先完成AI打轴以生成人声音轨和背景音轨', QMessageBox.Ok)
+            else:
+                mp3Path = QFileDialog.getSaveFileName(self, "选择音频输出文件夹", None, "(*.mp3)")[0]
+                if mp3Path:
+                    vocalPath = self.mp3Path + r'\vocals.mp3'
+                    bgmPath = self.mp3Path + r'\bgm.mp3'
+                    shutil.copy(vocalPath, mp3Path[:-4] + '_人声.mp3')
+                    shutil.copy(bgmPath, mp3Path[:-4] + '_背景声.mp3')
+                    QMessageBox.information(self, '导出音轨文件', '导出完成', QMessageBox.Ok)
+
+    def plot(self, x, y, voiceToken, h, step, limit=[-200, 200], subtitle={}):
+        # self.graph.setTitle(mp3Path)
         if voiceToken:  # 绘制人声音轨波形
             self.voiceWaveUp.setData(x, y)
             self.voiceWaveDown.setData(x, list(map(lambda x: -x, y)))
