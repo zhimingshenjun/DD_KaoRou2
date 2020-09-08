@@ -722,12 +722,12 @@ class MainWindow(QMainWindow):  # Main window
             self.subtitle.setItem(row + y, col, QTableWidgetItem(text))  # 更新表格
             self.subtitle.item(row + y, col).setTextAlignment(Qt.AlignTop)  # 字幕居上
         delta = int(repeat * self.globalInterval)
-        if delta < 500 or delta > 8000:  # 持续时间小于500ms或大于8s
-            tableColor = '#B22222'
-        elif delta > 4500:  # 持续时间大于4.5s且小于8s
-            tableColor = '#FA8072'
-        else:
-            tableColor = '#35545d'
+        # if delta < 500 or delta > 8000:  # 持续时间小于500ms或大于8s
+        #     tableColor = '#B22222'
+        # elif delta > 4500:  # 持续时间大于4.5s且小于8s
+        #     tableColor = '#FA8072'
+        # else:
+        #     tableColor = '#35545d'
         self.subtitle.item(row, col).setBackground(QColor(tableColor))
         self.grabKeyboard()
 
@@ -908,13 +908,13 @@ class MainWindow(QMainWindow):  # Main window
                     self.subtitle.item(yList[0], x).setTextAlignment(Qt.AlignTop)  # 字幕居上
                     self.subtitle.setSpan(yList[0], x, yList[1] - yList[0] + 1, 1)  # 合并单元格
                     delta = (yList[1] - yList[0] + 1) * int(self.globalInterval)
-                    if delta < 500 or delta > 8000:  # 持续时间小于500ms或大于8s
-                        tableColor = '#B22222'
-                    elif delta > 4500:  # 持续时间大于4.5s且小于8s
-                        tableColor = '#FA8072'
-                    else:
-                        tableColor = '#35545d'
-                    self.subtitle.item(yList[0], x).setBackground(QColor(tableColor))  # 第一个单元格填上颜色即可
+                    # if delta < 500 or delta > 8000:  # 持续时间小于500ms或大于8s
+                    #     tableColor = '#B22222'
+                    # elif delta > 4500:  # 持续时间大于4.5s且小于8s
+                    #     tableColor = '#FA8072'
+                    # else:
+                    #     tableColor = '#35545d'
+                    # self.subtitle.item(yList[0], x).setBackground(QColor(tableColor))  # 第一个单元格填上颜色即可
                     self.setSubtitleDict(yList[0], x, yList[1] - yList[0] + 1, firstItem, concat=True)  # 更新表格
         elif action == clrSpan:  # 拆分
             clearToken = False
