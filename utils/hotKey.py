@@ -19,9 +19,9 @@ class hotKey_Info(QDialog):
         self.setLayout(layout)
 
         key_txt = u'\
-q或1 \ w或2\n\n\
-e或3 \ r或4\n\n\
-c或5\n\n\
+1或q \ 2或w\n\n\
+3或e \ 4或r\n\n\
+5\n\n\
 delete\n\n\
 space\n\n\
 ctrl+s\n\n\

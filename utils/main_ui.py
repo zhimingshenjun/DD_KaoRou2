@@ -369,12 +369,15 @@ class MainWindow(QMainWindow):  # Main window
             self.tableRefresh = [True, False][int(self.settingDict['tableRefresh'])]
             self.changeSetting(self.settingDict)
 
-        self.videoWindowSizePreset = {0: (640, 360), 1: (800, 450), 2: (1280, 720), 3: (1366, 768),
-                                      4: (1600, 900), 5: (1920, 1080), 6: (2560, 1600)}
-        for self.videoWindowSizeIndex, preset in self.videoWindowSizePreset.items():
-            w, h = preset
-            if w >= self.width() / 2 or h >= self.height() / 2:
-                break
+        self.videoWindowSizePreset = {0: (640, 360), 1: (800, 450), 2: (1176, 664), 3: (1280, 720),
+                                      4: (1366, 768), 5: (1600, 900), 6: (1920, 1080), 7: (2560, 1600)}
+        # for self.videoWindowSizeIndex, preset in self.videoWindowSizePreset.items():
+        #     w, h = preset
+        #     print(w, h)
+        #     if w >= self.width() or h >= self.height():
+        #         break
+        self.videoWindowSizeIndex = 1
+        w, h = (800, 450)
         # self.videoWindowSizeIndex = 2
         self.sepMain = sepMainAudio(self.videoPath, self.duration)  # 创建切片主音频线程对象
         self.setPlayer()
@@ -438,34 +441,35 @@ class MainWindow(QMainWindow):  # Main window
                 self.videoWindowSizeIndex = 0
         else:
             self.videoWindowSizeIndex += 1
-            if self.videoWindowSizeIndex > 6:
-                self.videoWindowSizeIndex = 6
+            if self.videoWindowSizeIndex > 7:
+                self.videoWindowSizeIndex = 7
         w, h = self.videoWindowSizePreset[self.videoWindowSizeIndex]
-        if w > self.width() * 0.8 or h > self.height() * 0.8:
-            w = self.width() * 0.8
-            h = self.height() * 0.8
-            self.mainAudio.hide()
-            self.voiceAudio.hide()
-        elif w > self.width() * 0.5 or h > self.height() * 0.5:
-            self.mainAudio.hide()
-            self.voiceAudio.hide()
+        # if w > self.width() * 0.8 or h > self.height() * 0.8:
+        #     w = self.width() * 0.8
+        #     h = self.height() * 0.8
+        #     self.mainAudio.hide()
+        #     self.voiceAudio.hide()
+        if w > self.width() * 0.7 or h > self.height() * 0.7:
+            self.videoWindowSizeIndex -= 1
+            # self.mainAudio.hide()
+            # self.voiceAudio.hide()
         else:
-            self.mainAudio.show()
-            self.voiceAudio.show()
-        self.stack.setFixedSize(w, h)
-        self.view.setFixedSize(w, h)
-        self.scene.setSceneRect(5, 5, w - 10, h - 10)
-        self.playerWidget.setSize(QSizeF(w, h))
+            # self.mainAudio.show()
+            # self.voiceAudio.show()
+            self.stack.setFixedSize(w, h)
+            self.view.setFixedSize(w, h)
+            self.scene.setSceneRect(5, 5, w - 10, h - 10)
+            self.playerWidget.setSize(QSizeF(w, h))
 
     def setGraph(self):  # 绘制音频图
         self.mainAudio = graph_main()
         self.mainAudio.clicked.connect(self.playMainAudio)
 #         self.mainAudio.setMaximumHeight(self.height() / 3)
-        self.mainLayout.addWidget(self.mainAudio, 6, 0, 3, 4)
+        self.mainLayout.addWidget(self.mainAudio, 6, 0, 1, 4)
         self.voiceAudio = graph_vocal()
         self.voiceAudio.clicked.connect(self.playVocal)
 #         self.voiceAudio.setMaximumHeight(self.height() / 3)
-        self.mainLayout.addWidget(self.voiceAudio, 9, 0, 3, 4)
+        self.mainLayout.addWidget(self.voiceAudio, 7, 0, 1, 4)
 
     def setSubtitle(self):
         self.subtitleDict = {0: {}, 1: {}, 2: {}, 3: {}, 4: {}}  # 初始字幕字典
@@ -473,7 +477,7 @@ class MainWindow(QMainWindow):  # Main window
         self.subTimer.setInterval(10)
         self.subtitle.setAutoScroll(False)
         self.subtitle.setEditTriggers(QAbstractItemView.NoEditTriggers)
-        self.mainLayout.addWidget(self.subtitle, 0, 4, 12, 16)
+        self.mainLayout.addWidget(self.subtitle, 0, 4, 8, 16)
         self.subtitle.setColumnCount(5)
         self.subtitle.setRowCount(101)
         for index in range(5):
@@ -817,8 +821,9 @@ class MainWindow(QMainWindow):  # Main window
         pos = QPoint(pos.x() + 55, pos.y() + 30)
         menu = QMenu()
         setSpan = menu.addAction('合并')
+        cutSpan = menu.addAction('切割')
         clrSpan = menu.addAction('拆分')
-        copy = menu.addAction('复制')
+        _copy = menu.addAction('复制')
         paste = menu.addAction('粘贴')
         delete = menu.addAction('删除')
         check = menu.addAction('检查')
@@ -834,7 +839,7 @@ class MainWindow(QMainWindow):  # Main window
             if x not in xList:  # 剔除重复选择
                 xList.append(x)
         yList = [selected[0].row(), selected[-1].row()]
-        if action == copy:  # 复制
+        if action == _copy:  # 复制
             selectRange = [int((y + self.row) * self.globalInterval) for y in range(yList[0], yList[1] + 1)]
             self.clipBoard = []
             for x in xList:
@@ -914,8 +919,25 @@ class MainWindow(QMainWindow):  # Main window
                     #     tableColor = '#FA8072'
                     # else:
                     #     tableColor = '#35545d'
-                    # self.subtitle.item(yList[0], x).setBackground(QColor(tableColor))  # 第一个单元格填上颜色即可
+                    self.subtitle.item(yList[0], x).setBackground(QColor('#35545d'))  # 第一个单元格填上颜色即可
                     self.setSubtitleDict(yList[0], x, yList[1] - yList[0] + 1, firstItem, concat=True)  # 更新表格
+        elif action == cutSpan:  # 切割
+            y = yList[0]
+            cutToken = False
+            selectTime = int((y + self.row) * self.globalInterval)
+            copySubtitleDict = copy.deepcopy(self.subtitleDict)
+            for x in copySubtitleDict.keys():
+                for start, subData in copySubtitleDict[x].items():
+                    delta, text = subData
+                    if selectTime >= start and selectTime <= start + delta:
+                        cutToken = True
+                        self.subtitleDict[x][start] = [selectTime - start, text]
+                        self.subtitleDict[x][selectTime] = [start + delta - selectTime, text]
+            if cutToken:
+                scrollValue = self.subtitle.verticalScrollBar().value()
+                self.refreshTable(int(self.row * self.globalInterval), y, scrollValue)
+                self.refreshGraph(True)
+                self.updateBackend()
         elif action == clrSpan:  # 拆分
             clearToken = False
             for x in xList:
@@ -1932,7 +1954,7 @@ class MainWindow(QMainWindow):  # Main window
                 self.refreshTable(int(self.row * self.globalInterval), yList[0], scrollValue)
                 self.updateBackend()
                 self.refreshGraph(True)
-        elif key == Qt.Key_C or key == Qt.Key_5:  # 按当前选择位置裁剪字幕
+        elif key == Qt.Key_5:  # 按当前选择位置裁剪字幕
             selected = self.subtitle.selectionModel().selection().indexes()
             y = selected[0].row()
             cutToken = False

@@ -485,7 +485,7 @@ class separateQThread(QThread):  # AI分离人声音轨及打轴的核心线程
                                                 thresTime = 1
                                             if rolloffPlusSmoothScale[cnt] > 0.1 * thresTime or \
                                                     varList[cnt] > thres * thresTime or \
-                                                    rolloffPlusSmoothScale[cnt] > 0.5:
+                                                    rolloffPlusSmooth[cnt] > 200:
                                                 finishToken = False  # 若未触发字幕过长token 则依旧延续字幕轴
                                                 break
                                     except:
@@ -662,7 +662,9 @@ class reprocessQThread(QThread):  # 自选模式下 AI分离人声音轨及打�
                                 thresTime = (cnt - startCnt) / cutLevel
                                 if thresTime < 1:
                                     thresTime = 1
-                                if self.varList[cnt] > self.thres * thresTime:
+                                if self.varList[cnt] > self.thres * thresTime or\
+                                        self.voiceWave_smooth_scale[cnt] > 0.1 * thresTime or\
+                                        self.voiceWave_smooth[cnt] > 200:
                                     finishToken = False  # 若未触发字幕过长token 则依旧延续字幕轴
                                     break
                         except:
