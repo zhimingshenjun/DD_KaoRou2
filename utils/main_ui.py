@@ -7,7 +7,7 @@ from PySide2.QtWidgets import QWidget, QMainWindow, QGridLayout, QFileDialog, QT
         QGraphicsScene, QGraphicsView, QGraphicsDropShadowEffect, QComboBox, QMessageBox, QColorDialog
 from PySide2.QtMultimedia import QMediaPlayer
 from PySide2.QtMultimediaWidgets import QGraphicsVideoItem
-from PySide2.QtGui import QIcon, QKeySequence, QFont, QColor
+from PySide2.QtGui import QIcon, QKeySequence, QFont, QColor, QDesktopServices
 from PySide2.QtCore import Qt, QTimer, QEvent, QPoint, Signal, QSizeF, QUrl, QItemSelectionModel
 from utils.youtube_downloader import YoutubeDnld
 from utils.subtitle import exportSubtitle
@@ -1024,6 +1024,8 @@ class MainWindow(QMainWindow):  # Main window
         helpMenu = self.menuBar().addMenu('&帮助')
         settingAction = QAction(QIcon.fromTheme('document-open'), '&设置', self, triggered=self.popSettingPage)
         helpMenu.addAction(settingAction)
+        tutorialAction = QAction(QIcon.fromTheme('document-open'), '&视频教程', self, triggered=self.popTutorial)
+        helpMenu.addAction(tutorialAction)
         releasesAction = QAction(QIcon.fromTheme('document-open'), '&版本更新', self, triggered=self.popReleases)
         helpMenu.addAction(releasesAction)
         helpInfoAction = QAction(QIcon.fromTheme('document-open'), '&快捷键说明', self, triggered=self.popHotKeyInfo)
@@ -1520,6 +1522,9 @@ class MainWindow(QMainWindow):  # Main window
     def popSettingPage(self):
         self.setting.hide()
         self.setting.show()
+
+    def popTutorial(self):
+        QDesktopServices.openUrl(QUrl('https://space.bilibili.com/637783'))
 
     def popReleases(self):
         self.releases.hide()
