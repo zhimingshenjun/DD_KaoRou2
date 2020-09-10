@@ -1024,7 +1024,7 @@ class MainWindow(QMainWindow):  # Main window
         helpMenu = self.menuBar().addMenu('&帮助')
         settingAction = QAction(QIcon.fromTheme('document-open'), '&设置', self, triggered=self.popSettingPage)
         helpMenu.addAction(settingAction)
-        tutorialAction = QAction(QIcon.fromTheme('document-open'), '&视频教程', self, triggered=self.popTutorial)
+        tutorialAction = QAction(QIcon.fromTheme('document-open'), '&B站教程', self, triggered=self.popTutorial)
         helpMenu.addAction(tutorialAction)
         releasesAction = QAction(QIcon.fromTheme('document-open'), '&版本更新', self, triggered=self.popReleases)
         helpMenu.addAction(releasesAction)

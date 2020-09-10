@@ -410,7 +410,7 @@ class separateQThread(QThread):  # AI分离人声音轨及打轴的核心线程
                         med = np.median(varList)  # 1分钟内所有方差中位数
                         avg = np.median(varList)  # 1分钟内所有方差平均值
                         thres = avg if avg > med else med
-                        thres /= 4  # 灵敏模式阈值
+                        # thres /= 2  # 灵敏模式阈值
                     elif self.mode == 2:  # 自选模式
                         manualVocalList += varList  # 将所有方差值先保存至内存
                 else:
@@ -483,13 +483,27 @@ class separateQThread(QThread):  # AI分离人声音轨及打轴的核心线程
                                             thresTime = (cnt - startCnt) / cutLevel
                                             if thresTime < 1:
                                                 thresTime = 1
-                                            if rolloffPlusSmoothScale[cnt] > 0.1 * thresTime or \
-                                                    varList[cnt] > thres * thresTime or \
-                                                    rolloffPlusSmooth[cnt] > 200:
-                                                finishToken = False  # 若未触发字幕过长token 则依旧延续字幕轴
-                                                break
+                                            if cnt - startCnt <= 4500:
+                                                if rolloffPlusSmoothScale[cnt] > 0.1 * thresTime or \
+                                                   varList[cnt] > thres * thresTime or \
+                                                   rolloffPlusSmoothScale[cnt] > 0.25:
+                                                    finishToken = False  # 若未触发字幕过长token 则依旧延续字幕轴
+                                                    break
+                                            else:
+                                                if rolloffPlusSmoothScale[cnt] > 0.1 * thresTime or \
+                                                   varList[cnt] > thres * thresTime:
+                                                    finishToken = False  # 若未触发字幕过长token 则依旧延续字幕轴
+                                                    break
                                     except:
                                         break
+                                if cnt < len(_wave) - self.before - self.after:
+                                    for tempCnt in range(self.before + self.after):
+                                        tempCnt += cnt
+                                        if rolloffPlusSmoothScale[tempCnt] > 0.1 * thresTime or \
+                                           varList[tempCnt] > thres * thresTime or \
+                                           rolloffPlusSmoothScale[tempCnt] > 0.4:
+                                            cnt = tempCnt - self.before
+                                            break
                             if cnt < len(_wave):
                                 end = cut * 60000 + cnt  # 结束时间即结束向后查询的时间
                                 delta = end - start
@@ -662,12 +676,25 @@ class reprocessQThread(QThread):  # 自选模式下 AI分离人声音轨及打�
                                 thresTime = (cnt - startCnt) / cutLevel
                                 if thresTime < 1:
                                     thresTime = 1
-                                if self.varList[cnt] > self.thres * thresTime or\
-                                        self.voiceWave_smooth_scale[cnt] > 0.1 * thresTime or\
-                                        self.voiceWave_smooth[cnt] > 200:
-                                    finishToken = False  # 若未触发字幕过长token 则依旧延续字幕轴
-                                    break
+                                if cnt - startCnt <= 4500:
+                                    if self.varList[cnt] > self.thres * thresTime or\
+                                       self.voiceWave_smooth_scale[cnt] > 0.1 * thresTime or\
+                                       self.voiceWave_smooth_scale[cnt] > 0.25:
+                                        finishToken = False  # 若未触发字幕过长token 则依旧延续字幕轴
+                                        break
+                                else:
+                                    if self.varList[cnt] > self.thres * thresTime or\
+                                       self.voiceWave_smooth_scale[cnt] > 0.1 * thresTime:
+                                        finishToken = False  # 若未触发字幕过长token 则依旧延续字幕轴
+                                        break
                         except:
+                            break
+                    for tempCnt in range(self.before + self.after):
+                        tempCnt += cnt
+                        if self.varList[tempCnt] > self.thres * thresTime or \
+                           self.voiceWave_smooth_scale[tempCnt] > 0.1 * thresTime or \
+                           self.voiceWave_smooth_scale[tempCnt] > 0.25:
+                            cnt = tempCnt - self.before
                             break
                 end = cnt  # 结束时间即结束向后查询的时间
                 delta = end - start
