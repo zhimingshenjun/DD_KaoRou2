@@ -1524,7 +1524,7 @@ class MainWindow(QMainWindow):  # Main window
         self.setting.show()
 
     def popTutorial(self):
-        QDesktopServices.openUrl(QUrl('https://space.bilibili.com/637783'))
+        QDesktopServices.openUrl(QUrl('https://www.bilibili.com/video/BV1p5411b7o7'))
 
     def popReleases(self):
         self.releases.hide()
