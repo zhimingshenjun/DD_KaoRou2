@@ -395,7 +395,7 @@ class separateQThread(QThread):  # AI分离人声音轨及打轴的核心线程
                     prediction = self.separate.separate(waveform)  # 核心部分 调用spleeter分离音频
                     msList = []
                     varList = []
-                    voiceList = [[-2000, 1500]]
+                    voiceList = [[-9999, 1000]]
                     hz1000 = hz // 1000  # 1ms
                     for cnt, l in enumerate(prediction['vocals']):  # 只提取人声键值
                         for i in l:
@@ -438,7 +438,7 @@ class separateQThread(QThread):  # AI分离人声音轨及打轴的核心线程
                 elif self.level == 2:  # 严格断轴
                     cutLevel = 600
                 if self.mode != 2:  # 非自选模式
-                    voiceList = [[-2000, 1500]]
+                    voiceList = [[-9999, 1000]]
                     start = 0
                     end = 0  # 人声结束时间
                     cnt = self.before  # 用户设置打轴前侧预留时间(ms)
@@ -530,7 +530,7 @@ class separateQThread(QThread):  # AI分离人声音轨及打轴的核心线程
                                         voiceList = voiceList[:-1] + [[lastStart, end - lastStart]]
                                     else:
                                         voiceList.append([start, delta])  # 添加起止时间给信号槽发送
-
+                                print(voiceList)
                                 start = 0
                                 cnt += 1
                         else:
@@ -638,7 +638,7 @@ class reprocessQThread(QThread):  # 自选模式下 AI分离人声音轨及打�
             cutLevel = 600
         end = 0
         cnt = self.before  # 用户设置打轴前侧预留时间(ms)
-        voiceList = [[-2000, 1500]]
+        voiceList = [[-9999, 1000]]
         while cnt < len(self.voiceWave) - 1:  # 开始判断人声区域
             if not cnt % 3000:
                 self.percent.emit(cnt / (len(self.voiceWave) - 1) * 100)
@@ -842,6 +842,7 @@ class Separate(QDialog):  # 界面
         fillLabel.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
         trackLayout.addWidget(fillLabel, 0, 10, 1, 1)
         self.fillWord = QLineEdit()
+        self.fillWord.setMinimumWidth(100)
         self.fillWord.setText(str(self.settingDict['fill']))
         self.fillWord.textChanged.connect(self.changeSetting)
         trackLayout.addWidget(self.fillWord, 0, 11, 1, 1)

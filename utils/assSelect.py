@@ -48,6 +48,7 @@ class assCheck(QDialog):
 
     def __init__(self, subtitleDict, index, styles, styleNameList):
         super().__init__()
+        self.setWindowFlags(Qt.WindowStaysOnTopHint)  # 检查窗口永远置顶
         self.subtitleDict = subtitleDict
         self.index = index
         self.styles = styles
