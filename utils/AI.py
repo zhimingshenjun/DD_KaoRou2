@@ -727,6 +727,7 @@ class reprocessQThread(QThread):  # 自选模式下 AI分离人声音轨及打�
         modifyVoiceList = []
         for sub in voiceList:
             if sub[0] >= 0:  # 删除默认的起始时间小于0的轴
+                sub[0] += self.videoStart * 60000
                 if sub[1] >= 500:  # 过滤长度小于500ms的碎轴
                     modifyVoiceList.append(sub)
         self.voiceList.emit(modifyVoiceList)
