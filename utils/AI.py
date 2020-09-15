@@ -395,7 +395,7 @@ class separateQThread(QThread):  # AI分离人声音轨及打轴的核心线程
                     prediction = self.separate.separate(waveform)  # 核心部分 调用spleeter分离音频
                     msList = []
                     varList = []
-                    voiceList = [[-2000, 1500]]
+                    voiceList = [[-9999, 1000]]
                     hz1000 = hz // 1000  # 1ms
                     for cnt, l in enumerate(prediction['vocals']):  # 只提取人声键值
                         for i in l:
@@ -410,7 +410,7 @@ class separateQThread(QThread):  # AI分离人声音轨及打轴的核心线程
                         med = np.median(varList)  # 1分钟内所有方差中位数
                         avg = np.median(varList)  # 1分钟内所有方差平均值
                         thres = avg if avg > med else med
-                        thres /= 4  # 灵敏模式阈值
+                        # thres /= 2  # 灵敏模式阈值
                     elif self.mode == 2:  # 自选模式
                         manualVocalList += varList  # 将所有方差值先保存至内存
                 else:
@@ -438,7 +438,7 @@ class separateQThread(QThread):  # AI分离人声音轨及打轴的核心线程
                 elif self.level == 2:  # 严格断轴
                     cutLevel = 600
                 if self.mode != 2:  # 非自选模式
-                    voiceList = [[-2000, 1500]]
+                    voiceList = [[-9999, 1000]]
                     start = 0
                     end = 0  # 人声结束时间
                     cnt = self.before  # 用户设置打轴前侧预留时间(ms)
@@ -483,13 +483,27 @@ class separateQThread(QThread):  # AI分离人声音轨及打轴的核心线程
                                             thresTime = (cnt - startCnt) / cutLevel
                                             if thresTime < 1:
                                                 thresTime = 1
-                                            if rolloffPlusSmoothScale[cnt] > 0.1 * thresTime or \
-                                                    varList[cnt] > thres * thresTime or \
-                                                    rolloffPlusSmoothScale[cnt] > 0.5:
-                                                finishToken = False  # 若未触发字幕过长token 则依旧延续字幕轴
-                                                break
+                                            if cnt - startCnt <= 4500:
+                                                if rolloffPlusSmoothScale[cnt] > 0.1 * thresTime or \
+                                                   varList[cnt] > thres * thresTime or \
+                                                   rolloffPlusSmoothScale[cnt] > 0.25:
+                                                    finishToken = False  # 若未触发字幕过长token 则依旧延续字幕轴
+                                                    break
+                                            else:
+                                                if rolloffPlusSmoothScale[cnt] > 0.1 * thresTime or \
+                                                   varList[cnt] > thres * thresTime:
+                                                    finishToken = False  # 若未触发字幕过长token 则依旧延续字幕轴
+                                                    break
                                     except:
                                         break
+                                if cnt < len(_wave) - self.before - self.after:
+                                    for tempCnt in range(self.before + self.after):
+                                        tempCnt += cnt
+                                        if rolloffPlusSmoothScale[tempCnt] > 0.1 * thresTime or \
+                                           varList[tempCnt] > thres * thresTime or \
+                                           rolloffPlusSmoothScale[tempCnt] > 0.4:
+                                            cnt = tempCnt - self.before
+                                            break
                             if cnt < len(_wave):
                                 end = cut * 60000 + cnt  # 结束时间即结束向后查询的时间
                                 delta = end - start
@@ -516,7 +530,7 @@ class separateQThread(QThread):  # AI分离人声音轨及打轴的核心线程
                                         voiceList = voiceList[:-1] + [[lastStart, end - lastStart]]
                                     else:
                                         voiceList.append([start, delta])  # 添加起止时间给信号槽发送
-
+                                print(voiceList)
                                 start = 0
                                 cnt += 1
                         else:
@@ -624,7 +638,7 @@ class reprocessQThread(QThread):  # 自选模式下 AI分离人声音轨及打�
             cutLevel = 600
         end = 0
         cnt = self.before  # 用户设置打轴前侧预留时间(ms)
-        voiceList = [[-2000, 1500]]
+        voiceList = [[-9999, 1000]]
         while cnt < len(self.voiceWave) - 1:  # 开始判断人声区域
             if not cnt % 3000:
                 self.percent.emit(cnt / (len(self.voiceWave) - 1) * 100)
@@ -662,10 +676,25 @@ class reprocessQThread(QThread):  # 自选模式下 AI分离人声音轨及打�
                                 thresTime = (cnt - startCnt) / cutLevel
                                 if thresTime < 1:
                                     thresTime = 1
-                                if self.varList[cnt] > self.thres * thresTime:
-                                    finishToken = False  # 若未触发字幕过长token 则依旧延续字幕轴
-                                    break
+                                if cnt - startCnt <= 4500:
+                                    if self.varList[cnt] > self.thres * thresTime or\
+                                       self.voiceWave_smooth_scale[cnt] > 0.1 * thresTime or\
+                                       self.voiceWave_smooth_scale[cnt] > 0.25:
+                                        finishToken = False  # 若未触发字幕过长token 则依旧延续字幕轴
+                                        break
+                                else:
+                                    if self.varList[cnt] > self.thres * thresTime or\
+                                       self.voiceWave_smooth_scale[cnt] > 0.1 * thresTime:
+                                        finishToken = False  # 若未触发字幕过长token 则依旧延续字幕轴
+                                        break
                         except:
+                            break
+                    for tempCnt in range(self.before + self.after):
+                        tempCnt += cnt
+                        if self.varList[tempCnt] > self.thres * thresTime or \
+                           self.voiceWave_smooth_scale[tempCnt] > 0.1 * thresTime or \
+                           self.voiceWave_smooth_scale[tempCnt] > 0.25:
+                            cnt = tempCnt - self.before
                             break
                 end = cnt  # 结束时间即结束向后查询的时间
                 delta = end - start
@@ -813,6 +842,7 @@ class Separate(QDialog):  # 界面
         fillLabel.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
         trackLayout.addWidget(fillLabel, 0, 10, 1, 1)
         self.fillWord = QLineEdit()
+        self.fillWord.setMinimumWidth(100)
         self.fillWord.setText(str(self.settingDict['fill']))
         self.fillWord.textChanged.connect(self.changeSetting)
         trackLayout.addWidget(self.fillWord, 0, 11, 1, 1)

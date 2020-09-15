@@ -19,11 +19,12 @@ class hotKey_Info(QDialog):
         self.setLayout(layout)
 
         key_txt = u'\
-q或1 \ w或2\n\n\
-e或3 \ r或4\n\n\
-c或5\n\n\
+1或q \ 2或w\n\n\
+3或e \ 4或r\n\n\
+5\n\n\
 delete\n\n\
 space\n\n\
+s\n\n\
 ctrl+s\n\n\
 ctrl+z\n\n\
 ctrl+y\n\n\
@@ -40,6 +41,7 @@ ctrl+v\n\n\
 按当前选择位置分割字幕\n\n\
 删除表格里选中的字幕\n\n\
 播放\暂停视频\n\n\
+播放表格里选中的字幕\n\n\
 弹出保存字幕和输出视频页面\n\n\
 后退一步\n\n\
 前进一步\n\n\
