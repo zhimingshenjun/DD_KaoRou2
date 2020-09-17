@@ -351,12 +351,14 @@ class MainWindow(QMainWindow):  # Main window
         self.graphTimer.setInterval(33)
         self.setting = settingPage()
         self.setting.settingSignal.connect(self.changeSetting)
+
         self.tableRefresh = True
+        self.settingDict = {'layoutType': '0',  # 0: 风格1, 1: 风格2
+                            'tableRefresh': '0',  # 0: 开启, 1: 关闭
+                            'tableRefreshFPS': '0',  # 0: 60FPS, 1: 30FPS, 2: 20FPS, 3: 10FPS
+                            'graphRefreshFPS': '1',  # 0: 60FPS, 1: 30FPS, 2: 20FPS, 3: 10FPS
+                            }
         if os.path.exists('config'):  # 导入已存在的设置
-            self.settingDict = {'tableRefresh': 0,  # 0: 开启, 1: 关闭
-                           'tableRefreshFPS': 0,  # 0: 60FPS, 1: 30FPS, 2: 20FPS, 3: 10FPS
-                           'graphRefreshFPS': 1,  # 0: 60FPS, 1: 30FPS, 2: 20FPS, 3: 10FPS
-                           }
             with open('config', 'r') as cfg:
                 for line in cfg:
                     if '=' in line:
@@ -369,17 +371,10 @@ class MainWindow(QMainWindow):  # Main window
             self.tableRefresh = [True, False][int(self.settingDict['tableRefresh'])]
             self.changeSetting(self.settingDict)
 
+        self.sepMain = sepMainAudio(self.videoPath, self.duration)  # 创建切片主音频线程对象
         self.videoWindowSizePreset = {0: (640, 360), 1: (800, 450), 2: (1176, 664), 3: (1280, 720),
                                       4: (1366, 768), 5: (1600, 900), 6: (1920, 1080), 7: (2560, 1600)}
-        # for self.videoWindowSizeIndex, preset in self.videoWindowSizePreset.items():
-        #     w, h = preset
-        #     print(w, h)
-        #     if w >= self.width() or h >= self.height():
-        #         break
         self.videoWindowSizeIndex = 1
-        w, h = (800, 450)
-        # self.videoWindowSizeIndex = 2
-        self.sepMain = sepMainAudio(self.videoPath, self.duration)  # 创建切片主音频线程对象
         self.setPlayer()
         self.setGraph()
 
@@ -464,12 +459,14 @@ class MainWindow(QMainWindow):  # Main window
     def setGraph(self):  # 绘制音频图
         self.mainAudio = graph_main()
         self.mainAudio.clicked.connect(self.playMainAudio)
-#         self.mainAudio.setMaximumHeight(self.height() / 3)
-        self.mainLayout.addWidget(self.mainAudio, 6, 0, 1, 4)
         self.voiceAudio = graph_vocal()
         self.voiceAudio.clicked.connect(self.playVocal)
-#         self.voiceAudio.setMaximumHeight(self.height() / 3)
-        self.mainLayout.addWidget(self.voiceAudio, 7, 0, 1, 4)
+        if self.settingDict['layoutType'] == '0':
+            self.mainLayout.addWidget(self.mainAudio, 6, 0, 1, 4)
+            self.mainLayout.addWidget(self.voiceAudio, 7, 0, 1, 4)
+        elif self.settingDict['layoutType'] == '1':
+            self.mainLayout.addWidget(self.mainAudio, 6, 0, 1, 20)
+            self.mainLayout.addWidget(self.voiceAudio, 7, 0, 1, 20)
 
     def setSubtitle(self):
         self.subtitleDict = {0: {}, 1: {}, 2: {}, 3: {}, 4: {}}  # 初始字幕字典
@@ -477,11 +474,16 @@ class MainWindow(QMainWindow):  # Main window
         self.subTimer.setInterval(10)
         self.subtitle.setAutoScroll(False)
         self.subtitle.setEditTriggers(QAbstractItemView.NoEditTriggers)
-        self.mainLayout.addWidget(self.subtitle, 0, 4, 8, 16)
+        if self.settingDict['layoutType'] == '0':
+            self.mainLayout.addWidget(self.subtitle, 0, 4, 8, 16)
+        elif self.settingDict['layoutType'] == '1':
+            self.mainLayout.addWidget(self.subtitle, 0, 4, 6, 16)
         self.subtitle.setColumnCount(5)
         self.subtitle.setRowCount(101)
         for index in range(5):
             self.subtitle.setColumnWidth(index, 130)
+        for row in range(101):
+            self.subtitle.setRowHeight(row, 15)
         self.refreshTable()
         self.row = 0
         self.subtitle.selectRow(self.row)

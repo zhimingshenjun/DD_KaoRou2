@@ -538,7 +538,7 @@ class VideoDecoder(QWidget):
         self.outputEdit = QLineEdit()
         self.outputEdit.setFocusPolicy(Qt.NoFocus)
         self.startLayout.addWidget(self.outputEdit, 2, 0, 1, 4)
-        self.outputButton = QPushButton('保存路径')
+        self.outputButton = QPushButton('保存为')
         self.startLayout.addWidget(self.outputButton, 2, 4, 1, 1)
         self.outputButton.clicked.connect(self.setSavePath)
         self.exportSubButton = QPushButton('导出字幕')
@@ -608,7 +608,11 @@ class VideoDecoder(QWidget):
             self.layerCheck.setStyleSheet('background-color:#31363b')
 
     def setSavePath(self):
-        savePath = QFileDialog.getSaveFileName(self, "选择视频输出文件夹", None, "MP4格式 (*.mp4);;MKV格式 (*.mkv)")[0]
+        if self.videoPath:
+            outputName = os.path.split(self.videoPath)[1]
+        else:
+            outputName = ''
+        savePath = QFileDialog.getSaveFileName(self, "选择视频输出文件夹", outputName, "MP4格式 (*.mp4);;MKV格式 (*.mkv)")[0]
         if savePath:
             self.outputEdit.setText(savePath)
 

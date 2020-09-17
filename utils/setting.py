@@ -3,7 +3,7 @@
 
 
 import os
-from PySide2.QtWidgets import QGridLayout, QDialog, QLabel, QComboBox
+from PySide2.QtWidgets import QGridLayout, QDialog, QLabel, QComboBox, QMessageBox
 from PySide2.QtCore import Qt, Signal
 
 
@@ -19,13 +19,14 @@ class settingPage(QDialog):
 
     def __init__(self):
         super().__init__()
-        self.settingDict = {'tableRefresh': 0,  # 0: 开启, 1: 关闭
+        self.settingDict = {'layoutType': 0,  # 0: 风格1, 1: 风格2
+                            'tableRefresh': 0,  # 0: 开启, 1: 关闭
                             'tableRefreshFPS': 0,  # 0: 60FPS, 1: 30FPS, 2: 20FPS, 3: 10FPS
                             'graphRefreshFPS': 1,  # 0: 60FPS, 1: 30FPS, 2: 20FPS, 3: 10FPS
                             }
 
         self.setWindowTitle('设置')
-        self.resize(300, 200)
+        self.resize(640, 480)
         layout = QGridLayout()
         self.setLayout(layout)
 
@@ -40,28 +41,42 @@ class settingPage(QDialog):
                             print(str(e))
         self.settingSignal.emit(self.settingDict)  # 发射默认配置给主界面
 
-        layout.addWidget(label('表格进度跟随鼠标'), 0, 0, 1, 1)
+        layout.addWidget(label('布局风格'), 0, 0, 1, 1)
+        self.mainWindowLayoutType = QComboBox()
+        self.mainWindowLayoutType.addItems(['风格1', '风格2'])
+        self.mainWindowLayoutType.setCurrentIndex(int(self.settingDict['layoutType']))
+        self.mainWindowLayoutType.currentIndexChanged.connect(self.layoutTypeChange)
+        layout.addWidget(self.mainWindowLayoutType, 0, 1, 1, 1)
+
+        layout.addWidget(label(''), 0, 2, 1, 1)
+
+        layout.addWidget(label('表格进度跟随鼠标'), 0, 3, 1, 1)
         self.tableRefreshCombox = QComboBox()
         self.tableRefreshCombox.addItems(['开启', '关闭'])
         self.tableRefreshCombox.setCurrentIndex(int(self.settingDict['tableRefresh']))
         self.tableRefreshCombox.currentIndexChanged.connect(self.changeSetting)
-        layout.addWidget(self.tableRefreshCombox, 0, 1, 1, 1)
+        layout.addWidget(self.tableRefreshCombox, 0, 4, 1, 1)
 
-        layout.addWidget(label('限制表格刷新率'), 1, 0, 1, 1)
+        layout.addWidget(label('限制表格刷新率'), 1, 3, 1, 1)
         self.tableRefreshFPSCombox = QComboBox()
         self.tableRefreshFPSCombox.addItems(['60FPS (有点吃配置)', '30FPS (推荐)', '20FPS', '10FPS'])
         self.tableRefreshFPSCombox.setCurrentIndex(int(self.settingDict['tableRefreshFPS']))
         self.tableRefreshFPSCombox.currentIndexChanged.connect(self.changeSetting)
-        layout.addWidget(self.tableRefreshFPSCombox, 1, 1, 1, 1)
+        layout.addWidget(self.tableRefreshFPSCombox, 1, 4, 1, 1)
 
-        layout.addWidget(label('限制波形图刷新率'), 2, 0, 1, 1)
+        layout.addWidget(label('限制波形图刷新率'), 2, 3, 1, 1)
         self.graphRefreshFPSCombox = QComboBox()
         self.graphRefreshFPSCombox.addItems(['60FPS (比较吃配置)', '30FPS (推荐)', '20FPS', '10FPS'])
         self.graphRefreshFPSCombox.setCurrentIndex(int(self.settingDict['graphRefreshFPS']))
         self.graphRefreshFPSCombox.currentIndexChanged.connect(self.changeSetting)
-        layout.addWidget(self.graphRefreshFPSCombox, 2, 1, 1, 1)
+        layout.addWidget(self.graphRefreshFPSCombox, 2, 4, 1, 1)
+
+    def layoutTypeChange(self):
+        QMessageBox.information(self, '修改主界面排版', '界面排版需重启生效', QMessageBox.Ok)
+        self.changeSetting()
 
     def changeSetting(self):
+        self.settingDict['layoutType'] = self.mainWindowLayoutType.currentIndex()
         self.settingDict['tableRefresh'] = self.tableRefreshCombox.currentIndex()
         self.settingDict['tableRefreshFPS'] = self.tableRefreshFPSCombox.currentIndex()
         self.settingDict['graphRefreshFPS'] = self.graphRefreshFPSCombox.currentIndex()

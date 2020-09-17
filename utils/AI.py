@@ -530,7 +530,6 @@ class separateQThread(QThread):  # AI分离人声音轨及打轴的核心线程
                                         voiceList = voiceList[:-1] + [[lastStart, end - lastStart]]
                                     else:
                                         voiceList.append([start, delta])  # 添加起止时间给信号槽发送
-                                print(voiceList)
                                 start = 0
                                 cnt += 1
                         else:
