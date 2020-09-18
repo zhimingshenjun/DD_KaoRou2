@@ -4,15 +4,8 @@
 import shutil
 import pyqtgraph as pg
 pg.setConfigOption('background', '#232629')
-from PySide2.QtWidgets import QWidget, QMainWindow, QGridLayout, QFileDialog, QToolBar,\
-        QAction, QDialog, QStyle, QSlider, QLabel, QPushButton, QStackedWidget, QHBoxLayout,\
-        QLineEdit, QTableWidget, QAbstractItemView, QTableWidgetItem, QGraphicsTextItem, QMenu,\
-        QGraphicsScene, QGraphicsView, QGraphicsDropShadowEffect, QComboBox, QMessageBox, QColorDialog,\
-    QVBoxLayout
-from PySide2.QtMultimedia import QMediaPlayer
-from PySide2.QtMultimediaWidgets import QGraphicsVideoItem
-from PySide2.QtGui import QIcon, QKeySequence, QFont, QColor, QPen
-from PySide2.QtCore import Qt, QTimer, QEvent, QPoint, Signal, QSizeF, QUrl
+from PySide2.QtWidgets import QWidget, QFileDialog, QMenu, QMessageBox, QVBoxLayout
+from PySide2.QtCore import Qt, QPoint, Signal
 
 
 x_range = [-1, 1]
