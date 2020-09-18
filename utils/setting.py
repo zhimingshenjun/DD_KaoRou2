@@ -20,6 +20,7 @@ class settingPage(QDialog):
     def __init__(self):
         super().__init__()
         self.settingDict = {'layoutType': 0,  # 0: 风格1, 1: 风格2
+                            'redLinePos': 5,
                             'tableRefresh': 0,  # 0: 开启, 1: 关闭
                             'tableRefreshFPS': 0,  # 0: 60FPS, 1: 30FPS, 2: 20FPS, 3: 10FPS
                             'graphRefreshFPS': 1,  # 0: 60FPS, 1: 30FPS, 2: 20FPS, 3: 10FPS
@@ -43,10 +44,17 @@ class settingPage(QDialog):
 
         layout.addWidget(label('布局风格'), 0, 0, 1, 1)
         self.mainWindowLayoutType = QComboBox()
-        self.mainWindowLayoutType.addItems(['风格1', '风格2'])
+        self.mainWindowLayoutType.addItems(['视频和波形等长', '波形图窗口最长'])
         self.mainWindowLayoutType.setCurrentIndex(int(self.settingDict['layoutType']))
         self.mainWindowLayoutType.currentIndexChanged.connect(self.layoutTypeChange)
         layout.addWidget(self.mainWindowLayoutType, 0, 1, 1, 1)
+
+        layout.addWidget(label('波形图红线位置'), 1, 0, 1, 1)
+        self.redLinePosition = QComboBox()
+        self.redLinePosition.addItems(['%s' % (x * 10) + '%' for x in range(11)])
+        self.redLinePosition.setCurrentIndex(int(self.settingDict['redLinePos']))
+        self.redLinePosition.currentIndexChanged.connect(self.changeSetting)
+        layout.addWidget(self.redLinePosition, 1, 1, 1, 1)
 
         layout.addWidget(label(''), 0, 2, 1, 1)
 
@@ -77,6 +85,7 @@ class settingPage(QDialog):
 
     def changeSetting(self):
         self.settingDict['layoutType'] = self.mainWindowLayoutType.currentIndex()
+        self.settingDict['redLinePos'] = self.redLinePosition.currentIndex()
         self.settingDict['tableRefresh'] = self.tableRefreshCombox.currentIndex()
         self.settingDict['tableRefreshFPS'] = self.tableRefreshFPSCombox.currentIndex()
         self.settingDict['graphRefreshFPS'] = self.graphRefreshFPSCombox.currentIndex()

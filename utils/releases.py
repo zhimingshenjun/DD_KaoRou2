@@ -25,7 +25,7 @@ class releases(QDialog):
         layout = QGridLayout()
         self.setLayout(layout)
         layout.addWidget(label('当前版本'), 0, 0, 1, 1)
-        layout.addWidget(label('DD烤肉机2.0.0'), 0, 1, 1, 1)
+        layout.addWidget(label('DD烤肉机2.0.1'), 0, 1, 1, 1)
         layout.addWidget(label('检查更新'), 1, 0, 1, 1)
 
         releases_url = label('')

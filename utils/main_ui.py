@@ -354,6 +354,7 @@ class MainWindow(QMainWindow):  # Main window
 
         self.tableRefresh = True
         self.settingDict = {'layoutType': '0',  # 0: 风格1, 1: 风格2
+                            'redLinePos': '5',
                             'tableRefresh': '0',  # 0: 开启, 1: 关闭
                             'tableRefreshFPS': '0',  # 0: 60FPS, 1: 30FPS, 2: 20FPS, 3: 10FPS
                             'graphRefreshFPS': '1',  # 0: 60FPS, 1: 30FPS, 2: 20FPS, 3: 10FPS
@@ -1346,6 +1347,8 @@ class MainWindow(QMainWindow):  # Main window
     def changeSetting(self, settingDict):  # 配置设置参数
         self.settingDict = settingDict
         self.tableRefresh = [True, False][int(settingDict['tableRefresh'])]
+        self.redLineLeft = [10 * x for x in range(11)][int(settingDict['redLinePos'])]
+        self.redLineRight = 100 - self.redLineLeft
         self.tableRefreshLimit = [15, 30, 50, 100][int(settingDict['tableRefreshFPS'])]
         self.timer.setInterval(self.tableRefreshLimit)
         self.graphTimer.setInterval([15, 30, 50, 100][int(settingDict['graphRefreshFPS'])])
@@ -1401,12 +1404,12 @@ class MainWindow(QMainWindow):  # Main window
             if self.refreshMainAudioToken:  # 绘制主音频波形
                 pos = int((position / self.duration) * len(self.mainAudioWaveX))
                 if pos > len(self.mainAudioWaveX):
-                    pos = len(self.mainAudioWaveX) - int(self.globalInterval * 70) - 1
-                start = pos - int(self.globalInterval * 30)
+                    pos = len(self.mainAudioWaveX) - int(self.globalInterval * self.redLineRight) - 1
+                start = pos - int(self.globalInterval * self.redLineLeft)
                 if start < 0:
                     start = 0
                 start = start // step * step
-                end = pos + int(self.globalInterval * 70)  # 显示当前间隔x100的区域
+                end = pos + int(self.globalInterval * self.redLineRight)  # 显示当前间隔x100的区域
                 if end > len(self.mainAudioWaveX):
                     end = len(self.mainAudioWaveX)
                 end = end // step * step
@@ -1425,12 +1428,12 @@ class MainWindow(QMainWindow):  # Main window
             if self.refreshVoiceToken:  # 绘制AI产生的人声波形
                 pos = int((position / self.duration) * len(self.voiceWaveX))
                 if pos > len(self.voiceWaveX):
-                    pos = len(self.voiceWaveX) - int(self.globalInterval * 70) - 1
-                start = pos - int(self.globalInterval * 30)
+                    pos = len(self.voiceWaveX) - int(self.globalInterval * self.redLineRight) - 1
+                start = pos - int(self.globalInterval * self.redLineLeft)
                 if start < 0:
                     start = 0
                 start = start // step * step
-                end = pos + int(self.globalInterval * 70)  # 显示当前间隔x100的区域
+                end = pos + int(self.globalInterval * self.redLineRight)  # 显示当前间隔x100的区域
                 if end > len(self.voiceWaveX):
                     end = len(self.voiceWaveX)
                 end = end // step * step
@@ -1446,13 +1449,13 @@ class MainWindow(QMainWindow):  # Main window
                                      [-self.mainAudioMax, self.mainAudioMax], subtitleLine)
 
     def playMainAudio(self):  # 播放主音频
-        if not self.playStatus:
-            self.secondeMedia = False
-            self.player_vocal.setMuted(True)
-            self.player.setMuted(False)
+        # if not self.playStatus:
+        self.secondeMedia = False
+        self.player_vocal.setMuted(True)
+        self.player.setMuted(False)
 
     def playVocal(self):  # 播放人声音频
-        if os.path.exists(r'temp_audio\vocals.mp3') and self.videoPath and not self.playStatus:
+        if os.path.exists(r'temp_audio\vocals.mp3') and self.videoPath:
             self.player.setMuted(True)
             self.player_vocal.setMuted(False)
             if not self.secondeMedia:  # 从原音轨切换至第二音轨
@@ -1470,7 +1473,10 @@ class MainWindow(QMainWindow):  # Main window
                 self.voiceMedia = not self.voiceMedia
                 self.refreshGraph(True)
             self.player_vocal.setPosition(self.player.position())
-            self.player_vocal.play()
+            if not self.playStatus:
+                self.player_vocal.play()
+            else:
+                self.player_vocal.pause()
 
     def setTablePreset(self, preset):
         self.tablePreset = preset  # 填充字符 输出列
