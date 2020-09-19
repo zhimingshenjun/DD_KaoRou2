@@ -272,6 +272,7 @@ class Anime4KDialog(QWidget):
         self.outputPath = ''
         self.videoWidth = 0
         self.videoHeight = 0
+        # self.scaleSize = QSize(self.videoWidth * 1.5, self.videoHeight * 1.5)
         self.duration = 0
         self.videoPos = 0
         self.gpuMode = ''
@@ -481,6 +482,7 @@ class Anime4KDialog(QWidget):
                         break
             except:
                 self.duration = 114514  # 万一读取不上来视频长度就先随便分配个
+            self.setTip()
 
     def setSavePath(self):
         outputPath = QFileDialog.getSaveFileName(self, "选择视频输出文件夹", None, "视频文件 (*.mp4 *.avi *.flv);;所有文件(*.*)")[0]
