@@ -621,23 +621,27 @@ class MainWindow(QMainWindow):  # Main window
                                     else:
                                         subData[start] = [delta, f[cnt + 1][:-1]]
                 elif subtitlePath.endswith('.lrc'):
+                    while '\n' in f:
+                        f.remove('\n')
                     for cnt, l in enumerate(f[:-1]):
-                        if l[0] == '[' and l[9] == ']':
+                        try:
+                            if len(l) > 9:
+                                if l[0] == '[' and l[9] == ']':
+                                    start = calSubTime2(l[1:9])
+                                    delta = calSubTime2(f[cnt + 1][1:9]) - start
+                                    text = l.strip()[10:]
+                                    subData[start] = [delta, text]
+                        except Exception as e:
+                            print(str(e))
+                    if len(f[:-1]) > 9:
+                        if f[:-1][0] == '[' and f[:-1][9] == ']':
                             try:
-                                start = calSubTime2(l[1:9])
-                                delta = calSubTime2(f[cnt + 1][1:9]) - start
-                                text = l.strip()[10:]
+                                start = calSubTime2(f[:-1][1:9])
+                                delta = self.duration - start
+                                text = f[:-1].strip()[10:]
                                 subData[start] = [delta, text]
                             except Exception as e:
                                 print(str(e))
-                    if f[:-1][0] == '[' and f[:-1][9] == ']':
-                        try:
-                            start = calSubTime2(f[:-1][1:9])
-                            delta = self.duration - start
-                            text = f[:-1].strip()[10:]
-                            subData[start] = [delta, text]
-                        except Exception as e:
-                            print(str(e))
                 self.subtitleDict[index].update(subData)
                 self.updateBackend()
                 self.refreshTable()
