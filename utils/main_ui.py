@@ -369,8 +369,8 @@ class MainWindow(QMainWindow):  # Main window
                                 self.settingDict[cfgName] = cfgValue
                         except Exception as e:
                             print(str(e))
-            self.tableRefresh = [True, False][int(self.settingDict['tableRefresh'])]
-            self.changeSetting(self.settingDict)
+        self.tableRefresh = [True, False][int(self.settingDict['tableRefresh'])]
+        self.changeSetting(self.settingDict)
 
         self.sepMain = sepMainAudio(self.videoPath, self.duration)  # 创建切片主音频线程对象
         self.videoWindowSizePreset = {0: (640, 360), 1: (800, 450), 2: (1176, 664), 3: (1280, 720),
