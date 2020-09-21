@@ -32,44 +32,44 @@ class dnldThread(QThread):
             modifyName = '%s_%s_%s.%s' % (self.title, num, self.resolution[cnt], self.videoType[cnt])
             outputPath = os.path.join(self.savePath, modifyName.replace(':', ' -'))  # 文件路径里不能带冒号
             if not os.path.exists(outputPath):
-                print(outputPath)
                 self.downloading.emit(outputPath)
                 cmd = ['utils/youtube-dl.exe', '-f', num]
                 if not cnt:
                     cmd += self.args
                 cmd.append(self.url)
-                print(cmd)
+                cmd.append('-o')
+                cmd.append(outputPath)
                 p = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                 while p.poll() is None:
                     line = p.stdout.read(100).decode('utf8', 'ignore')
                     print(line)
                     self.percent.emit(line)
                     time.sleep(1)
-                if '?v=' in self.url:
-                    _id = self.url.split('?v=')[-1]
-                else:
-                    _id = self.url.split('/')[-1]
-                if self.savePath != os.getcwd():
-                    for f in os.listdir(os.getcwd()):
-                        if _id in f:
-                            if f.endswith('.vtt') or f.endswith('.srt') or f.endswith('.jpg') or f.endswith('.webp'):
-                                if os.path.exists(os.path.join(self.savePath, f)):
-                                    os.remove(f)
-                                else:
-                                    shutil.move(f, self.savePath)
-                            elif f.endswith('.mp4') or f.endswith('.webm') or f.endswith('.m4a') or f.endswith('.part'):
-                                if os.path.exists(os.path.join(self.savePath, f)):
-                                    os.remove(f)
-                                else:
-                                    shutil.move(f, outputPath)
-                else:
-                    for f in os.listdir(os.getcwd()):
-                        if _id in f and 'part' not in f and not f.endswith('.vtt') and\
-                        not f.endswith('.srt') and not f.endswith('.jpg') and not f.endswith('.webp'):
-                            if os.path.exists(modifyName):
-                                os.remove(f)
-                            else:
-                                os.rename(f, modifyName)
+                # if '?v=' in self.url:
+                #     _id = self.url.split('?v=')[-1]
+                # else:
+                #     _id = self.url.split('/')[-1]
+                # if self.savePath != os.getcwd():
+                #     for f in os.listdir(os.getcwd()):
+                #         if _id in f:
+                #             if f.endswith('.vtt') or f.endswith('.srt') or f.endswith('.jpg') or f.endswith('.webp'):
+                #                 if os.path.exists(os.path.join(self.savePath, f)):
+                #                     os.remove(f)
+                #                 else:
+                #                     shutil.move(f, self.savePath)
+                #             elif f.endswith('.mp4') or f.endswith('.webm') or f.endswith('.m4a') or f.endswith('.part'):
+                #                 if os.path.exists(os.path.join(self.savePath, f)):
+                #                     os.remove(f)
+                #                 else:
+                #                     shutil.move(f, outputPath)
+                # else:
+                #     for f in os.listdir(os.getcwd()):
+                #         if _id in f and 'part' not in f and not f.endswith('.vtt') and\
+                #         not f.endswith('.srt') and not f.endswith('.jpg') and not f.endswith('.webp'):
+                #             if os.path.exists(modifyName):
+                #                 os.remove(f)
+                #             else:
+                #                 os.rename(f, modifyName)
                 self.done.emit('单项完成')
             else:
                 self.done.emit('文件已存在 跳过')
