@@ -158,7 +158,7 @@ class assSelect(QDialog):
                              'Shadow': '', 'Alignment': '', 'MarginL': '', 'MarginR': '', 'MarginV': '', 'Encoding': '',
                              'Tableview': [], 'Events': []}}
         self.resize(950, 800)
-        self.setWindowTitle('选择要导入的ass字幕轨道')
+        self.setWindowTitle('选择要导入的ass字幕样式')
         layout = QGridLayout()
         self.setLayout(layout)
         layout.addWidget(QLabel('检测到字幕样式:'), 0, 0, 1, 1)
@@ -310,3 +310,75 @@ class assSelect(QDialog):
             if style:
                 combox.append(style)
         self.subCombox.addItems(combox)
+
+
+class subSelect(QDialog):  # 导入除ass格式外的其他类型字幕时的弹窗
+    select = Signal(dict, int)
+
+    def __init__(self):
+        super().__init__()
+        self.resize(950, 800)
+        self.setWindowTitle('导入字幕')
+        layout = QGridLayout()
+        self.setLayout(layout)
+        self.subTable = QTableWidget()
+        self.subTable.setEditTriggers(QAbstractItemView.NoEditTriggers)
+        layout.addWidget(self.subTable, 0, 0, 7, 3)
+        self.confirm = QPushButton('导入')
+        self.confirm.clicked.connect(self.sendSub)
+        layout.addWidget(self.confirm, 7, 0, 1, 1)
+        self.confirmStyle = QPushButton('导入样式')
+        self.cancel = QPushButton('取消')
+        self.cancel.clicked.connect(self.hide)
+        layout.addWidget(self.cancel, 7, 2, 1, 1)
+
+    def setDefault(self, subData={}, index=0, format=''):
+        self.subData = subData
+        self.index = index
+        self.setWindowTitle('导入%s字幕至第%s列轨道' % (format, index + 1))
+        self.refreshTable()
+
+    def refreshTable(self):
+        self.subTable.setRowCount(len(self.subData))
+        self.subTable.setColumnCount(4)
+        for col in range(3):
+            self.subTable.setColumnWidth(col, 160)
+        self.subTable.setColumnWidth(3, 350)
+        startList = sorted(self.subData.keys())
+        for y, start in enumerate(startList):
+            preConflict = False  # 上一条字幕时轴有重叠
+            nextConflict = False
+            delta, text = self.subData[start]
+            end = start + delta
+            if y < len(startList) - 1:
+                nextStart = startList[y + 1]
+                if end > nextStart:
+                    nextConflict = True
+                else:
+                    nextConflict = False
+            if delta < 500 or delta > 8000:  # 持续时间小于500ms或大于8s
+                deltaError = 2
+            elif delta > 4500:  # 持续时间大于4.5s且小于8s
+                deltaError = 1
+            else:
+                deltaError = 0
+            s, ms = divmod(delta, 1000)
+            ms = ('%03d' % ms)[:2]
+            delta = '持续 %s.%ss' % (s, ms)
+            self.subTable.setItem(y, 0, QTableWidgetItem(ms2ASSTime(start)))  # 开始时间
+            if preConflict:
+                self.subTable.item(y, 0).setBackground(QColor('#B22222'))  # 红色警告
+            self.subTable.setItem(y, 1, QTableWidgetItem(ms2ASSTime(end)))  # 结束时间
+            if nextConflict:
+                self.subTable.item(y, 1).setBackground(QColor('#B22222'))  # 红色警告
+            self.subTable.setItem(y, 2, QTableWidgetItem(delta))  # 持续时间
+            if deltaError == 2:
+                self.subTable.item(y, 2).setBackground(QColor('#B22222'))  # 红色警告
+            elif deltaError == 1:
+                self.subTable.item(y, 2).setBackground(QColor('#FA8072'))  # 橙色警告
+            self.subTable.setItem(y, 3, QTableWidgetItem(text))  # 字幕文本
+            preConflict = nextConflict  # 将重叠信号传递给下一条轴
+
+    def sendSub(self):
+        self.select.emit(self.subData, self.index)
+        self.hide()
