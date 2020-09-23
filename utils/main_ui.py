@@ -792,12 +792,12 @@ class MainWindow(QMainWindow):  # Main window
         setSpan = menu.addAction('合并')
         cutSpan = menu.addAction('切割')
         clrSpan = menu.addAction('拆分')
+        cut = menu.addAction('剪切')
         _copy = menu.addAction('复制')
         paste = menu.addAction('粘贴')
         delete = menu.addAction('删除')
         check = menu.addAction('检查')
         addSub = menu.addAction('导入')
-        # cutSub = menu.addAction('裁剪平移')
         replay = menu.addAction('循环播放')
         cancelReplay = menu.addAction('取消循环')
         action = menu.exec_(self.subtitle.mapToGlobal(pos))
@@ -808,7 +808,29 @@ class MainWindow(QMainWindow):  # Main window
             if x not in xList:  # 剔除重复选择
                 xList.append(x)
         yList = [selected[0].row(), selected[-1].row()]
-        if action == _copy:  # 复制
+        if action == cut:  # 剪切
+            selectRange = [int((y + self.row) * self.globalInterval) for y in range(yList[0], yList[1] + 1)]
+            self.clipBoard = []
+            for x in xList:
+                for start, subData in self.subtitleDict[x].items():
+                    end = subData[0] + start
+                    for position in selectRange:
+                        if start < position and position < end:
+                            self.clipBoard.append([start, subData])
+                            break
+                for i in self.clipBoard:
+                    start = i[0]
+                    try:
+                        del self.subtitleDict[x][start]
+                    except:
+                        pass
+                for y in range(yList[0], yList[1] + 1):
+                    if self.subtitle.item(y, x):
+                        self.subtitle.setSpan(y, x, 1, 1)
+                        self.subtitle.setItem(y, x, QTableWidgetItem(''))
+                        self.subtitle.item(y, x).setBackground(QColor('#232629'))  # 没内容颜色
+                break  # 只剪切选中的第一列
+        elif action == _copy:  # 复制
             selectRange = [int((y + self.row) * self.globalInterval) for y in range(yList[0], yList[1] + 1)]
             self.clipBoard = []
             for x in xList:
@@ -1818,6 +1840,35 @@ class MainWindow(QMainWindow):  # Main window
             except Exception as e:
                 print(str(e))
             self.graphTimer.start()
+        elif QKeyEvent.modifiers() == Qt.ControlModifier and key == Qt.Key_X:  # 剪切
+            selected = self.subtitle.selectionModel().selection().indexes()
+            xList = []  # 选中行
+            for i in range(len(selected)):
+                x = selected[i].column()
+                if x not in xList:  # 剔除重复选择
+                    xList.append(x)
+            yList = [selected[0].row(), selected[-1].row()]
+            selectRange = [int((y + self.row) * self.globalInterval) for y in range(yList[0], yList[1] + 1)]
+            self.clipBoard = []
+            for x in xList:
+                for start, subData in self.subtitleDict[x].items():
+                    end = subData[0] + start
+                    for position in selectRange:
+                        if start < position and position < end:
+                            self.clipBoard.append([start, subData])
+                            break
+                for i in self.clipBoard:
+                    start = i[0]
+                    try:
+                        del self.subtitleDict[x][start]
+                    except:
+                        pass
+                for y in range(yList[0], yList[1] + 1):
+                    if self.subtitle.item(y, x):
+                        self.subtitle.setSpan(y, x, 1, 1)
+                        self.subtitle.setItem(y, x, QTableWidgetItem(''))
+                        self.subtitle.item(y, x).setBackground(QColor('#232629'))  # 没内容颜色
+                break  # 只剪切选中的第一列
         elif QKeyEvent.modifiers() == Qt.ControlModifier and key == Qt.Key_C:  # 复制
             selected = self.subtitle.selectionModel().selection().indexes()
             xList = []  # 选中行
