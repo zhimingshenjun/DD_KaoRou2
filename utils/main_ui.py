@@ -4,7 +4,7 @@ import os, subprocess, copy, time, shutil, codecs
 from PySide2.QtWidgets import QWidget, QMainWindow, QGridLayout, QFileDialog, QToolBar,\
         QAction, QDialog, QStyle, QSlider, QLabel, QPushButton, QStackedWidget, QHBoxLayout,\
         QLineEdit, QTableWidget, QAbstractItemView, QTableWidgetItem, QGraphicsTextItem, QMenu,\
-        QGraphicsScene, QGraphicsView, QGraphicsDropShadowEffect, QComboBox, QMessageBox, QColorDialog
+        QGraphicsScene, QGraphicsView, QGraphicsDropShadowEffect, QComboBox, QMessageBox, QColorDialog, QDockWidget
 from PySide2.QtMultimedia import QMediaPlayer
 from PySide2.QtMultimediaWidgets import QGraphicsVideoItem
 from PySide2.QtGui import QIcon, QKeySequence, QFont, QColor, QDesktopServices
@@ -294,6 +294,12 @@ class MainWindow(QMainWindow):  # Main window
         self.anime4KWindow.hide()
 
         self.stack = QStackedWidget()
+
+        # self.playerDock = QDockWidget('视频预览', self)
+        # self.playerDock.setFloating(False)
+        # self.playerDock.setWidget(self.stack)
+        # self.addDockWidget(Qt.LeftDockWidgetArea, self.playerDock)
+
         self.mainLayout.addWidget(self.stack, 0, 0, 6, 4)
         buttonWidget = QWidget()
         buttonLayout = QHBoxLayout()
@@ -351,8 +357,8 @@ class MainWindow(QMainWindow):  # Main window
         self.videoWindowSizeIndex = 1
         self.setPlayer()
         self.setGraph()
-
         self.setSubtitle()
+
         self.setToolBar()
         self.setCentralWidget(self.mainWidget)
         self.editToken = False
@@ -409,13 +415,9 @@ class MainWindow(QMainWindow):  # Main window
             if self.videoWindowSizeIndex > 7:
                 self.videoWindowSizeIndex = 7
         w, h = self.videoWindowSizePreset[self.videoWindowSizeIndex]
-        if w > self.width() * 0.7 or h > self.height() * 0.7:
+        if h > self.height() * 0.65:
             self.videoWindowSizeIndex -= 1
-            # self.mainAudio.hide()
-            # self.voiceAudio.hide()
         else:
-            # self.mainAudio.show()
-            # self.voiceAudio.show()
             self.stack.setFixedSize(w, h)
             self.view.setFixedSize(w, h)
             self.scene.setSceneRect(5, 5, w - 10, h - 10)
@@ -426,6 +428,17 @@ class MainWindow(QMainWindow):  # Main window
         self.mainAudio.clicked.connect(self.playMainAudio)
         self.voiceAudio = graph_vocal()
         self.voiceAudio.clicked.connect(self.playVocal)
+        self.graphWidget = QWidget()
+        graphWidgetLayout = QGridLayout()
+        self.graphWidget.setLayout(graphWidgetLayout)
+        graphWidgetLayout.addWidget(self.mainAudio, 0, 0, 1, 1)
+        graphWidgetLayout.addWidget(self.voiceAudio, 1, 0, 1, 1)
+
+        # self.graphDock = QDockWidget('波形图', self)
+        # self.graphDock.setFloating(False)
+        # self.graphDock.setWidget(self.graphWidget)
+        # self.addDockWidget(Qt.LeftDockWidgetArea, self.graphDock)
+
         if self.settingDict['layoutType'] == '0':
             self.mainLayout.addWidget(self.mainAudio, 6, 0, 1, 4)
             self.mainLayout.addWidget(self.voiceAudio, 7, 0, 1, 4)
@@ -439,6 +452,12 @@ class MainWindow(QMainWindow):  # Main window
         self.subTimer.setInterval(10)
         self.subtitle.setAutoScroll(False)
         self.subtitle.setEditTriggers(QAbstractItemView.NoEditTriggers)
+
+        # self.subtitleDock = QDockWidget('字幕编辑', self)
+        # self.subtitleDock.setFloating(False)
+        # self.subtitleDock.setWidget(self.subtitle)
+        # self.addDockWidget(Qt.RightDockWidgetArea, self.subtitleDock)
+
         if self.settingDict['layoutType'] == '0':
             self.mainLayout.addWidget(self.subtitle, 0, 4, 8, 16)
         elif self.settingDict['layoutType'] == '1':

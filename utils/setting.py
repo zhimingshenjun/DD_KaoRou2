@@ -44,7 +44,7 @@ class settingPage(QDialog):
 
         layout.addWidget(label('布局风格'), 0, 0, 1, 1)
         self.mainWindowLayoutType = QComboBox()
-        self.mainWindowLayoutType.addItems(['视频和波形等长', '波形图窗口最长'])
+        self.mainWindowLayoutType.addItems(['波形图居左下', '波形图居正下'])
         self.mainWindowLayoutType.setCurrentIndex(int(self.settingDict['layoutType']))
         self.mainWindowLayoutType.currentIndexChanged.connect(self.layoutTypeChange)
         layout.addWidget(self.mainWindowLayoutType, 0, 1, 1, 1)
