@@ -603,7 +603,7 @@ class MainWindow(QMainWindow):  # Main window
                                 if '<b>' in f[cnt + 1]:  # 有的字幕里带<b> 好像是通过ffmpeg把ass转srt出来的
                                     subData[start] = [delta, f[cnt + 1].split('<b>')[1].split('<')[0]]
                                 else:
-                                    subData[start] = [delta, f[cnt + 1][:-1]]
+                                    subData[start] = [delta, f[cnt + 1].strip()]
                 elif subtitlePath.endswith('.lrc'):
                     format = 'lrc'
                     while '\n' in f:
