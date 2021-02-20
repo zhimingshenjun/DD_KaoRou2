@@ -113,15 +113,15 @@ class translateThread(QThread):  # AI翻译线程
     result = Signal(list)
     finish = Signal(bool)
 
-    API_URL = 'https://api.ai.qq.com/fcgi-bin/nlp/nlp_speechtranslate'
+    url = 'https://api.ai.qq.com/fcgi-bin/nlp/nlp_speechtranslate'
 
     def __init__(self, voiceDict: dict, videoStart, videoEnd, source, target, APPID, APPKEY):
         super().__init__()
         self.voiceDict = copy.deepcopy(voiceDict)
         self.videoStart = videoStart
         self.videoEnd = videoEnd
-        self.source = {0: 'jp', 1: 'en', 2: 'kr', 3: 'zh'}[source]
-        self.target = {0: 'jp', 1: 'en', 2: 'kr', 3: 'zh'}[target]
+        self.source = Sources(source).value
+        self.target = Sources(target).value
         if self.source == 'zh':
             self.interval = 9
         else:
@@ -150,7 +150,7 @@ class translateThread(QThread):  # AI翻译线程
             return dict_error
 
     def getAISpeech(self, chunk, end_flag, format_id, seq, *args):
-        self.request_header = {
+        request_header = {
             "app_id": self.app_id,
             "app_key": self.app_key,
             "time_stamp": int(time.time()),
@@ -164,7 +164,7 @@ class translateThread(QThread):  # AI翻译线程
             "target": self.target,
             "sign": genSignString(self.data),
         }
-        return self.invoke(self.data)
+        return self.invoke(request_header)
 
     def prepareParams(self, file_path):
         self.data = {}
