@@ -1,21 +1,32 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
 
-import os, subprocess, wave, time, shutil
-import json
-import hashlib
-import urllib.request, urllib.parse, urllib.error
-import urllib.request, urllib.error, urllib.parse
 import base64
+import copy
+import enum
+import hashlib
+import json
+import librosa
 import numpy as np
-from spleeter.separator import Separator
-from spleeter.audio.adapter import get_default_audio_adapter
-from PySide2.QtWidgets import QGridLayout, QDialog, QPushButton, QProgressBar, QLabel, QComboBox, QLineEdit, QGroupBox,\
-    QWidget, QSlider
+import os
+import pyqtgraph as pg
+import shutil
+import sklearn
+import subprocess
+import time
+import urllib.error
+import urllib.error
+import urllib.parse
+import urllib.parse
+import urllib.request
+import urllib.request
+import wave
 from PySide2.QtCore import QTimer, Signal, QThread, Qt, QPoint
 from PySide2.QtGui import QIntValidator
-import copy, librosa, sklearn
-import pyqtgraph as pg
+from PySide2.QtWidgets import QGridLayout, QDialog, QPushButton, QProgressBar, QLabel, QComboBox, QLineEdit, QGroupBox, \
+    QWidget, QSlider
+from spleeter.audio.adapter import get_default_audio_adapter
+from spleeter.separator import Separator
 
 
 def getWave(audioPath):
@@ -34,14 +45,14 @@ def getWave(audioPath):
 def vocalJudge(waveList):
     avg = np.mean(waveList)
     waveList = list(map(lambda x: x - avg, waveList))
-#     thres = -(np.mean(list(map(lambda x: abs(x), waveList))) ** 2) / 2
+    #     thres = -(np.mean(list(map(lambda x: abs(x), waveList))) ** 2) / 2
     dot = 0
     for cnt, i in enumerate(waveList[:-2]):
-#         pre = i * waveList[cnt - 1]
-#         nxt = i * waveList[cnt + 1]
+        #         pre = i * waveList[cnt - 1]
+        #         nxt = i * waveList[cnt + 1]
         first = i * waveList[cnt + 1]
         secnd = waveList[cnt + 1] * waveList[cnt + 2]
-#         third = i * waveList[cnt + 2]
+        #         third = i * waveList[cnt + 2]
         if first < -10000 and secnd < -10000:
             dot += 1
     return dot
@@ -90,12 +101,21 @@ class pingTencent(QThread):  # 测试网络
             self.pingResult.emit(False)
 
 
+class Sources(enum.Enum):
+    jp = 0
+    en = 1
+    kr = 2
+    zh = 3
+
+
 class translateThread(QThread):  # AI翻译线程
     percent = Signal(float)
     result = Signal(list)
     finish = Signal(bool)
 
-    def __init__(self, voiceDict, videoStart, videoEnd, source, target, APPID, APPKEY):
+    API_URL = 'https://api.ai.qq.com/fcgi-bin/nlp/nlp_speechtranslate'
+
+    def __init__(self, voiceDict: dict, videoStart, videoEnd, source, target, APPID, APPKEY):
         super().__init__()
         self.voiceDict = copy.deepcopy(voiceDict)
         self.videoStart = videoStart
@@ -108,6 +128,7 @@ class translateThread(QThread):  # AI翻译线程
             self.interval = 4
         self.app_id = APPID
         self.app_key = APPKEY
+        self.data = {}
 
     def invoke(self, params):
         self.url_data = urllib.parse.urlencode(params)
@@ -118,41 +139,31 @@ class translateThread(QThread):  # AI翻译线程
             dict_rsp = json.loads(str_rsp)
             return dict_rsp
         except urllib.error.URLError as e:
-            dict_error = {}
+            dict_error = {"ret": -1, "httpcode": -1, "msg": "Unknown"}
             if hasattr(e, "code"):
-                dict_error = {}
-                dict_error['ret'] = -1
                 dict_error['httpcode'] = e.code
                 dict_error['msg'] = "sdk http post err"
-                return dict_error
             if hasattr(e, "reason"):
-                dict_error['msg'] = 'sdk http post err'
-                dict_error['httpcode'] = -1
-                dict_error['ret'] = -1
-                return dict_error
-        else:
-            dict_error = {}
-            dict_error['ret'] = -1
-            dict_error['httpcode'] = -1
-            dict_error['msg'] = "system error"
+                dict_error['msg'] = e.reason
+            else:
+                dict_error['msg'] = "system error"
             return dict_error
 
-    def getAISpeech(self, chunk, speech_id, end_flag, format_id, rate, bits, seq, chunk_len, cont_res):
-        self.url = r'https://api.ai.qq.com/fcgi-bin/nlp/nlp_speechtranslate'
-        setParams(self.data, 'app_id', self.app_id)
-        setParams(self.data, 'app_key', self.app_key)
-        setParams(self.data, 'time_stamp', int(time.time()))
-        setParams(self.data, 'nonce_str', int(time.time()))
-        speech_chunk = base64.b64encode(chunk).decode('utf8')
-        setParams(self.data, 'speech_chunk', speech_chunk)
-        setParams(self.data, 'session_id', 'DD_KaoRou')
-        setParams(self.data, 'end', end_flag)
-        setParams(self.data, 'format', format_id)
-        setParams(self.data, 'seq', seq)
-        setParams(self.data, 'source', self.source)
-        setParams(self.data, 'target', self.target)
-        sign_str = genSignString(self.data)
-        setParams(self.data, 'sign', sign_str)
+    def getAISpeech(self, chunk, end_flag, format_id, seq, *args):
+        self.request_header = {
+            "app_id": self.app_id,
+            "app_key": self.app_key,
+            "time_stamp": int(time.time()),
+            "nonce_str": int(time.time()),
+            "speech_chunk": base64.b64encode(chunk).decode('utf8'),
+            "session_id": "DD_KaoRou",
+            "end": end_flag,
+            "format": format_id,
+            "seq": seq,
+            "source": self.source,
+            "target": self.target,
+            "sign": genSignString(self.data),
+        }
         return self.invoke(self.data)
 
     def prepareParams(self, file_path):
@@ -205,7 +216,8 @@ class translateThread(QThread):  # AI翻译线程
                 cuts, remain = divmod(delta, 10000)
                 for _ in range(cuts):
                     cutPath = r'temp_audio\vocals_translate_%s.mp3' % start
-                    cmd = ['ffmpeg.exe', '-y', '-i', r'temp_audio\audio_original.aac', '-ss', str(start // 1000), '-t', '10000',
+                    cmd = ['ffmpeg.exe', '-y', '-i', r'temp_audio\audio_original.aac', '-ss', str(start // 1000), '-t',
+                           '10000',
                            '-sample_fmt', 's16', '-ac', '1', '-ar', '16000', cutPath]
                     p = subprocess.Popen(cmd)
                     p.wait()
@@ -214,7 +226,8 @@ class translateThread(QThread):  # AI翻译线程
                     self.prepareParams(cutPath)
                     time.sleep(self.interval)
                 cutPath = r'temp_audio\vocals_translate_%s.mp3' % start
-                cmd = ['ffmpeg.exe', '-y', '-i', r'temp_audio\audio_original.aac', '-ss', str(start // 1000), '-t', str(remain // 1000 + 1),
+                cmd = ['ffmpeg.exe', '-y', '-i', r'temp_audio\audio_original.aac', '-ss', str(start // 1000), '-t',
+                       str(remain // 1000 + 1),
                        '-sample_fmt', 's16', '-ac', '1', '-ar', '16000', cutPath]
                 p = subprocess.Popen(cmd)
                 p.wait()
@@ -280,7 +293,8 @@ class separateQThread(QThread):  # AI分离人声音轨及打轴的核心线程
     finish = Signal(bool)
     varList = Signal(list)
 
-    def __init__(self, videoPath, duration, videoStart, videoEnd, before, after, flash, mode, level, multiThread, parent=None):
+    def __init__(self, videoPath, duration, videoStart, videoEnd, before, after, flash, mode, level, multiThread,
+                 parent=None):
         super(separateQThread, self).__init__(parent)
         for f in os.listdir('temp_audio'):
             if '_wave' in f:
@@ -345,7 +359,8 @@ class separateQThread(QThread):  # AI分离人声音轨及打轴的核心线程
                 cmd = ['ffmpeg.exe', '-y', '-i', r'temp_audio\vocals.wav', mp3Path_vocal]
                 p = subprocess.Popen(cmd)
                 p.wait()
-                cmd = ['ffmpeg.exe', '-y', '-i', mp3Path_vocal, '-ss', '0', '-t', '60', '-c', 'copy', mp3Path_vocal.replace('_temp', '')]
+                cmd = ['ffmpeg.exe', '-y', '-i', mp3Path_vocal, '-ss', '0', '-t', '60', '-c', 'copy',
+                       mp3Path_vocal.replace('_temp', '')]
                 p = subprocess.Popen(cmd)  # 裁剪成精确的60s
                 p.wait()
                 os.remove(mp3Path_vocal)
@@ -353,13 +368,15 @@ class separateQThread(QThread):  # AI分离人声音轨及打轴的核心线程
                 cmd = ['ffmpeg.exe', '-y', '-i', r'temp_audio\accompaniment.wav', mp3Path_bgm]
                 p = subprocess.Popen(cmd)  # 转码保留背景音轨
                 p.wait()
-                cmd = ['ffmpeg.exe', '-y', '-i', mp3Path_bgm, '-ss', '0', '-t', '60', '-c', 'copy', mp3Path_bgm.replace('_temp', '')]
+                cmd = ['ffmpeg.exe', '-y', '-i', mp3Path_bgm, '-ss', '0', '-t', '60', '-c', 'copy',
+                       mp3Path_bgm.replace('_temp', '')]
                 p = subprocess.Popen(cmd)  # 裁剪成精确的60s
                 p.wait()
                 os.remove(mp3Path_bgm)
 
                 wavePath = r'temp_audio\bgm_downsample.wav'  # 获取bgm音轨波形
-                cmd = ['ffmpeg.exe', '-y', '-i', r'temp_audio\accompaniment.wav', '-vn', '-ar', '1000', wavePath]  # 用ffmpeg再降一次采样
+                cmd = ['ffmpeg.exe', '-y', '-i', r'temp_audio\accompaniment.wav', '-vn', '-ar', '1000',
+                       wavePath]  # 用ffmpeg再降一次采样
                 p = subprocess.Popen(cmd)
                 p.wait()
                 _, _wave = getWave(wavePath)  # 发送人声波形
@@ -368,7 +385,8 @@ class separateQThread(QThread):  # AI分离人声音轨及打轴的核心线程
                 bgmWave += _wave  # 拼接波形
 
                 wavePath = r'temp_audio\vocals_downsample.wav'  # 获取人声音轨波形
-                cmd = ['ffmpeg.exe', '-y', '-i', r'temp_audio\vocals.wav', '-vn', '-ar', '1000', wavePath]  # 用ffmpeg再降一次采样
+                cmd = ['ffmpeg.exe', '-y', '-i', r'temp_audio\vocals.wav', '-vn', '-ar', '1000',
+                       wavePath]  # 用ffmpeg再降一次采样
                 p = subprocess.Popen(cmd)
                 p.wait()
                 _time, _wave = getWave(wavePath)  # 发送人声波形
@@ -433,7 +451,7 @@ class separateQThread(QThread):  # AI分离人声音轨及打轴的核心线程
 
                 if self.level == 0:  # 宽松断轴
                     cutLevel = 3600
-                elif self.level == 1: # 中等断轴
+                elif self.level == 1:  # 中等断轴
                     cutLevel = 1200
                 elif self.level == 2:  # 严格断轴
                     cutLevel = 600
@@ -485,19 +503,20 @@ class separateQThread(QThread):  # AI分离人声音轨及打轴的核心线程
                                                 thresTime = 1
                                             if cnt - startCnt <= 2500:
                                                 if rolloffPlusSmoothScale[cnt] > 0.1 * thresTime or \
-                                                   varList[cnt] > thres * thresTime or \
-                                                   rolloffPlusSmoothScale[cnt] > 0.25 or rolloffPlusSmooth[cnt] > 100:
+                                                        varList[cnt] > thres * thresTime or \
+                                                        rolloffPlusSmoothScale[cnt] > 0.25 or rolloffPlusSmooth[
+                                                    cnt] > 100:
                                                     finishToken = False  # 若未触发字幕过长token 则依旧延续字幕轴
                                                     break
                                             elif cnt - startCnt <= 4500:
                                                 if rolloffPlusSmoothScale[cnt] > 0.1 * thresTime or \
-                                                   varList[cnt] > thres * thresTime or \
-                                                   rolloffPlusSmoothScale[cnt] > 0.25:
+                                                        varList[cnt] > thres * thresTime or \
+                                                        rolloffPlusSmoothScale[cnt] > 0.25:
                                                     finishToken = False  # 若未触发字幕过长token 则依旧延续字幕轴
                                                     break
                                             else:
                                                 if rolloffPlusSmoothScale[cnt] > 0.1 * thresTime or \
-                                                   varList[cnt] > thres * thresTime:
+                                                        varList[cnt] > thres * thresTime:
                                                     finishToken = False  # 若未触发字幕过长token 则依旧延续字幕轴
                                                     break
                                     except:
@@ -506,8 +525,8 @@ class separateQThread(QThread):  # AI分离人声音轨及打轴的核心线程
                                     for tempCnt in range(self.before + self.after):
                                         tempCnt += cnt
                                         if rolloffPlusSmoothScale[tempCnt] > 0.1 * thresTime or \
-                                           varList[tempCnt] > thres * thresTime or \
-                                           rolloffPlusSmoothScale[tempCnt] > 0.4:
+                                                varList[tempCnt] > thres * thresTime or \
+                                                rolloffPlusSmoothScale[tempCnt] > 0.4:
                                             cnt = tempCnt - self.before
                                             break
                             if cnt < len(_wave):
@@ -519,19 +538,22 @@ class separateQThread(QThread):  # AI分离人声音轨及打轴的核心线程
                                     voiceList = voiceList[:-1] + [[lastStart, lastDelta]]
                                 if self.level == 0:  # 宽松断轴
                                     # 若相邻的两条轴其中一方短于1.25s则连起来
-                                    if lastStart + lastDelta >= start - self.flash - 300 and (lastDelta <= 2000 or delta <= 2000)\
-                                    and lastDelta <= 3000 and delta <= 3000:  # 双方中若有一方大于3s则不合并
+                                    if lastStart + lastDelta >= start - self.flash - 300 and (
+                                            lastDelta <= 2000 or delta <= 2000) \
+                                            and lastDelta <= 3000 and delta <= 3000:  # 双方中若有一方大于3s则不合并
                                         voiceList = voiceList[:-1] + [[lastStart, end - lastStart]]
                                     else:
                                         voiceList.append([start, delta])  # 添加起止时间给信号槽发送
                                 elif self.level == 1:  # 中等断轴
-                                    if lastStart + lastDelta >= start - self.flash - 300 and (lastDelta <= 1500 or delta <= 1500)\
+                                    if lastStart + lastDelta >= start - self.flash - 300 and (
+                                            lastDelta <= 1500 or delta <= 1500) \
                                             and lastDelta <= 2500 and delta <= 2500:  # 双方中若有一方大于2.5s则不合并
                                         voiceList = voiceList[:-1] + [[lastStart, end - lastStart]]
                                     else:
                                         voiceList.append([start, delta])  # 添加起止时间给信号槽发送
                                 elif self.level == 2:  # 严格断轴
-                                    if lastStart + lastDelta >= start - self.flash and (lastDelta <= 800 or delta <= 800)\
+                                    if lastStart + lastDelta >= start - self.flash and (
+                                            lastDelta <= 800 or delta <= 800) \
                                             and lastDelta <= 1500 and delta <= 1500:  # 双方中若有一方大于1.5s则不合并
                                         voiceList = voiceList[:-1] + [[lastStart, end - lastStart]]
                                     else:
@@ -560,7 +582,8 @@ class separateQThread(QThread):  # AI分离人声音轨及打轴的核心线程
                 if cut == cuts - 1:
                     mp3Path_vocal = r'temp_audio\vocals_wave_%s.mp3' % cut  # 创建静音文件填补空白
                     remain = self.duration % 60000
-                    cmd = ['ffmpeg.exe', '-f', 'lavfi', '-i', 'anullsrc=r=44100:cl=mono', '-t', str(remain / 1000), '-q:a', '9',
+                    cmd = ['ffmpeg.exe', '-f', 'lavfi', '-i', 'anullsrc=r=44100:cl=mono', '-t', str(remain / 1000),
+                           '-q:a', '9',
                            '-acodec', 'libmp3lame', '-y', mp3Path_vocal]
                     p = subprocess.Popen(cmd)
                     p.wait()
@@ -599,9 +622,11 @@ class separateQThread(QThread):  # AI分离人声音轨及打轴的核心线程
         with open('bgmList.txt', 'w') as f:  # 合并mp3
             for cut in range(cuts):
                 f.write('file temp_audio/bgm_wave_%s.mp3\n' % cut)
-        cmd = ['ffmpeg.exe', '-y', '-f', 'concat', '-safe', '0', '-i', 'vocalslist.txt', '-c', 'copy', r'temp_audio\vocals.mp3']
+        cmd = ['ffmpeg.exe', '-y', '-f', 'concat', '-safe', '0', '-i', 'vocalslist.txt', '-c', 'copy',
+               r'temp_audio\vocals.mp3']
         subprocess.Popen(cmd)
-        cmd = ['ffmpeg.exe', '-y', '-f', 'concat', '-safe', '0', '-i', 'bgmList.txt', '-c', 'copy', r'temp_audio\bgm.mp3']
+        cmd = ['ffmpeg.exe', '-y', '-f', 'concat', '-safe', '0', '-i', 'bgmList.txt', '-c', 'copy',
+               r'temp_audio\bgm.mp3']
         subprocess.Popen(cmd)
         self.finish.emit(True)
 
@@ -621,7 +646,8 @@ class reprocessQThread(QThread):  # 自选模式下 AI分离人声音轨及打�
     percent = Signal(float)
     voiceList = Signal(list)
 
-    def __init__(self, before, after, flash, level, thres, videoStart, voiceWave, voiceWave_smooth_scale, voiceWave_smooth, varList, parent=None):
+    def __init__(self, before, after, flash, level, thres, videoStart, voiceWave, voiceWave_smooth_scale,
+                 voiceWave_smooth, varList, parent=None):
         super(reprocessQThread, self).__init__(parent)
         self.before = int(before)
         self.after = int(after)
@@ -682,14 +708,14 @@ class reprocessQThread(QThread):  # 自选模式下 AI分离人声音轨及打�
                                 if thresTime < 1:
                                     thresTime = 1
                                 if cnt - startCnt <= 4500:
-                                    if self.varList[cnt] > self.thres * thresTime or\
-                                       self.voiceWave_smooth_scale[cnt] > 0.1 * thresTime or\
-                                       self.voiceWave_smooth_scale[cnt] > 0.25:
+                                    if self.varList[cnt] > self.thres * thresTime or \
+                                            self.voiceWave_smooth_scale[cnt] > 0.1 * thresTime or \
+                                            self.voiceWave_smooth_scale[cnt] > 0.25:
                                         finishToken = False  # 若未触发字幕过长token 则依旧延续字幕轴
                                         break
                                 else:
-                                    if self.varList[cnt] > self.thres * thresTime or\
-                                       self.voiceWave_smooth_scale[cnt] > 0.1 * thresTime:
+                                    if self.varList[cnt] > self.thres * thresTime or \
+                                            self.voiceWave_smooth_scale[cnt] > 0.1 * thresTime:
                                         finishToken = False  # 若未触发字幕过长token 则依旧延续字幕轴
                                         break
                         except:
@@ -697,8 +723,8 @@ class reprocessQThread(QThread):  # 自选模式下 AI分离人声音轨及打�
                     for tempCnt in range(self.before + self.after):
                         tempCnt += cnt
                         if self.varList[tempCnt] > self.thres * thresTime or \
-                           self.voiceWave_smooth_scale[tempCnt] > 0.1 * thresTime or \
-                           self.voiceWave_smooth_scale[tempCnt] > 0.25:
+                                self.voiceWave_smooth_scale[tempCnt] > 0.1 * thresTime or \
+                                self.voiceWave_smooth_scale[tempCnt] > 0.25:
                             cnt = tempCnt - self.before
                             break
                 end = cnt  # 结束时间即结束向后查询的时间
@@ -928,7 +954,7 @@ class Separate(QDialog):  # 界面
         translateLayout.addWidget(self.translateProcessBar, 2, 0, 1, 10)
         self.translateButton = QPushButton('开始')
         self.translateButton.setFixedWidth(100)
-#         self.translateButton.setEnabled(False)
+        #         self.translateButton.setEnabled(False)
         self.translateButton.clicked.connect(self.startTranslate)
         translateLayout.addWidget(self.translateButton, 2, 10, 1, 1)
         self.networkToken = False
@@ -1082,7 +1108,8 @@ class Separate(QDialog):  # 界面
                 self.levelLine.setValue(thres)
             self.levelSlider.setValue(self.levelSlider.width() / 2)
             self.levelEdit.setText('%.10f' % thres)
-            self.levelGraph.plot(range(len(varList)), varList, pen=None, symbol='o', symbolSize=1, symbolBrush=(100, 100, 100, 100))
+            self.levelGraph.plot(range(len(varList)), varList, pen=None, symbol='o', symbolSize=1,
+                                 symbolBrush=(100, 100, 100, 100))
 
     def refreshGraph(self):
         if self.varList:
@@ -1108,7 +1135,8 @@ class Separate(QDialog):  # 界面
                     self.levelLine.setValue(thres)
                 self.levelSlider.setValue(self.levelSlider.width() / 2)
                 self.levelEdit.setText('%.10f' % thres)
-                self.levelGraph.plot(range(len(varList)), varList, pen=None, symbol='o', symbolSize=1, symbolBrush=(100, 100, 100, 100), clear=True)
+                self.levelGraph.plot(range(len(varList)), varList, pen=None, symbol='o', symbolSize=1,
+                                     symbolBrush=(100, 100, 100, 100), clear=True)
                 self.levelLine = self.levelGraph.addLine(y=thres, pen=pg.mkPen('#d93c30', width=2))
                 self.levelLine.setZValue(10)
 
@@ -1202,7 +1230,8 @@ class Separate(QDialog):  # 界面
                     translateDict = self.subtitleDict[self.targetOutputIndex]
                     videoStart = self.videoStart.currentIndex()
                     videoEnd = self.videoEnd.currentIndex()
-                    self.translate = translateThread(translateDict, videoStart, videoEnd, sourceIndex, targetIndex, APPID, APPKEY)
+                    self.translate = translateThread(translateDict, videoStart, videoEnd, sourceIndex, targetIndex,
+                                                     APPID, APPKEY)
                     self.translate.percent.connect(self.setTranslateProcessBar)
                     self.translate.result.connect(self.sendTranslateResults)
                     self.translate.finish.connect(self.translateFinished)
